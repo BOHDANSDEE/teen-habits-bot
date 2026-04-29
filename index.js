@@ -719,6 +719,8 @@ function lessonsKeyboard(chatId) {
 function lessonKeyboard(lessonId) {
   return {
     inline_keyboard: [
+      [{ text: "🎬 Дивитися відео", callback_data: `video_open_${lessonId}` }],
+      [{ text: "📖 Читати урок", callback_data: `text_open_${lessonId}` }],
       [{ text: "🧠 Пройти тест", callback_data: `test_open_${lessonId}` }],
       [{ text: "📚 До списку уроків", callback_data: "course_open" }],
       [{ text: "🏠 Головне меню", callback_data: "main_menu" }]
@@ -823,13 +825,15 @@ async function showLesson(chatId, lessonId) {
       return;
     }
 
-    await bot.sendMessage(chatId, `📌 ${lesson.title}`);
-
-    await sendLessonContent(chatId, lesson);
-
     await bot.sendMessage(
       chatId,
-      `Коли будеш готовий — натисни кнопку нижче й пройди тест із 4 питань 👇`,
+      `📌 ${lesson.title}
+
+Обери формат проходження уроку:
+
+🎬 Дивитися відео — відео буде додано пізніше.
+📖 Читати урок — текстова версія доступна вже зараз.
+🧠 Пройти тест — після ознайомлення з матеріалом.`,
       {
         reply_markup: lessonKeyboard(lesson.id)
       }
@@ -890,6 +894,32 @@ ${content.value}`
   await bot.sendMessage(chatId, "🎬 Матеріал уроку скоро буде.");
 }
 
+async function sendLessonText(chatId, lesson) {
+  if (!lesson.textLesson) {
+    await bot.sendMessage(
+      chatId,
+      `📖 Текстовий урок
+
+Матеріал скоро буде додано.
+
+Поки можеш повернутися до уроку або пройти тест, якщо вже знаєш тему.`,
+      {
+        reply_markup: lessonKeyboard(lesson.id)
+      }
+    );
+    return;
+  }
+
+  await bot.sendMessage(
+    chatId,
+    `📖 ${lesson.title}
+
+${lesson.textLesson}`,
+    {
+      reply_markup: lessonKeyboard(lesson.id)
+    }
+  );
+}
 /*
   ======================================
   7. ТЕСТ
@@ -1173,6 +1203,56 @@ bot.on("callback_query", async (query) => {
     });
     return;
   }
+
+  if (data.startsWith("video_open_")) {
+  const lessonId = Number(data.replace("video_open_", ""));
+  const lesson = findLessonById(lessonId);
+
+  await safeAction("videoOpen", chatId, async () => {
+    if (!lesson) {
+      await bot.sendMessage(chatId, "❌ Урок не знайдено.", {
+        reply_markup: continueKeyboard()
+      });
+      return;
+    }
+
+    if (!isLessonUnlocked(chatId, lessonId)) {
+      await bot.sendMessage(chatId, "🔒 Це відео поки закрите.", {
+        reply_markup: continueKeyboard()
+      });
+      return;
+    }
+
+    await sendLessonContent(chatId, lesson);
+  });
+
+  return;
+}
+
+if (data.startsWith("text_open_")) {
+  const lessonId = Number(data.replace("text_open_", ""));
+  const lesson = findLessonById(lessonId);
+
+  await safeAction("textOpen", chatId, async () => {
+    if (!lesson) {
+      await bot.sendMessage(chatId, "❌ Урок не знайдено.", {
+        reply_markup: continueKeyboard()
+      });
+      return;
+    }
+
+    if (!isLessonUnlocked(chatId, lessonId)) {
+      await bot.sendMessage(chatId, "🔒 Цей текстовий урок поки закритий.", {
+        reply_markup: continueKeyboard()
+      });
+      return;
+    }
+
+    await sendLessonText(chatId, lesson);
+  });
+
+  return;
+}
 
   if (data.startsWith("test_open_")) {
     const lessonId = Number(data.replace("test_open_", ""));
