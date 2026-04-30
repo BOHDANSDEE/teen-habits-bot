@@ -1,5 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import "dotenv/config";
+import fs from "fs";
 
 /*
   ======================================
@@ -31,18 +32,59 @@ console.log("✅ Polling увімкнено");
   ======================================
 */
 
-const userProgress = new Map();
+const PROGRESS_FILE = "./progress.json";
+
+function loadProgressFromFile() {
+  try {
+    if (!fs.existsSync(PROGRESS_FILE)) {
+      console.log("ℹ️ progress.json ще немає, створюємо новий прогрес");
+      return new Map();
+    }
+
+    const rawData = fs.readFileSync(PROGRESS_FILE, "utf-8");
+
+    if (!rawData.trim()) {
+      console.log("ℹ️ progress.json порожній, створюємо новий прогрес");
+      return new Map();
+    }
+
+    const parsedData = JSON.parse(rawData);
+    const entries = Object.entries(parsedData);
+
+    console.log(`✅ Прогрес завантажено з progress.json: ${entries.length} користувачів`);
+
+    return new Map(entries);
+  } catch (error) {
+    console.error("❌ Не вдалося завантажити progress.json:", error.message);
+    return new Map();
+  }
+}
+
+function saveProgressToFile() {
+  try {
+    const data = Object.fromEntries(userProgress);
+    fs.writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (error) {
+    console.error("❌ Не вдалося зберегти progress.json:", error.message);
+  }
+}
+
+const userProgress = loadProgressFromFile();
 
 function getUserProgress(chatId) {
-  if (!userProgress.has(chatId)) {
-    userProgress.set(chatId, {
+  const key = String(chatId);
+
+  if (!userProgress.has(key)) {
+    userProgress.set(key, {
       unlockedLessonId: 0,
       answers: {},
       scores: {}
     });
+
+    saveProgressToFile();
   }
 
-  return userProgress.get(chatId);
+  return userProgress.get(key);
 }
 
 /*
@@ -1001,6 +1043,7 @@ function unlockNextLesson(chatId, currentLessonId) {
 
   if (nextLessonId < lessons.length && nextLessonId > progress.unlockedLessonId) {
     progress.unlockedLessonId = nextLessonId;
+    saveProgressToFile();
   }
 }
 
@@ -1345,12 +1388,14 @@ async function showTest(chatId, lessonId) {
 
     const progress = getUserProgress(chatId);
 
-    progress.answers[lessonId] = {
-      currentQuestionIndex: 0,
-      correctCount: 0
-    };
+progress.answers[lessonId] = {
+  currentQuestionIndex: 0,
+  correctCount: 0
+};
 
-    await sendQuestion(chatId, lessonId);
+saveProgressToFile();
+
+await sendQuestion(chatId, lessonId);
   });
 }
 
@@ -1416,11 +1461,13 @@ async function checkAnswer(chatId, lessonId, questionIndex, answerIndex) {
 
     const isCorrect = answerIndex === question.correctIndex;
 
-    if (isCorrect) {
-      testState.correctCount += 1;
-    }
+if (isCorrect) {
+  testState.correctCount += 1;
+}
 
-    await bot.sendMessage(
+saveProgressToFile();
+
+await bot.sendMessage(
       chatId,
       `${isCorrect ? "✅ Правильно!" : "❌ Неправильно."}
 
@@ -1449,10 +1496,12 @@ async function finishTest(chatId, lessonId) {
     return;
   }
 
-  const score = testState.correctCount;
-  progress.scores[lessonId] = score;
+const score = testState.correctCount;
+progress.scores[lessonId] = score;
 
-  let message = "";
+saveProgressToFile();
+
+let message = "";
 
   if (score <= 2) {
     message = `📊 Результат: ${score}/4
