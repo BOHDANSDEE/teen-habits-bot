@@ -1057,6 +1057,7 @@ function mainMenuKeyboard() {
   return {
     inline_keyboard: [
       [{ text: "🚀 Почати курс", callback_data: "course_open" }],
+      [{ text: "📊 Мій прогрес", callback_data: "my_progress" }],
       [{ text: "🧪 Перевірити бота", callback_data: "bot_check" }]
     ]
   };
@@ -1552,6 +1553,43 @@ let message = "";
   ======================================
 */
 
+async function showMyProgress(chatId) {
+  await safeAction("showMyProgress", chatId, async () => {
+    const progress = getUserProgress(chatId);
+
+    const openedLessonsCount = progress.unlockedLessonId + 1;
+    const totalLessonsCount = lessons.length;
+
+    const completedTestsCount = Object.keys(progress.scores || {}).length;
+
+    const resultsText = lessons
+      .map((lesson) => {
+        const score = progress.scores?.[lesson.id];
+
+        if (score === undefined) {
+          return `▫️ ${lesson.shortTitle}: ще не пройдено`;
+        }
+
+        return `✅ ${lesson.shortTitle}: ${score}/4`;
+      })
+      .join("\n");
+
+    await bot.sendMessage(
+      chatId,
+      `📊 Мій прогрес
+
+Відкрито уроків: ${openedLessonsCount}/${totalLessonsCount}
+Пройдено тестів: ${completedTestsCount}/${totalLessonsCount}
+
+Результати:
+${resultsText}`,
+      {
+        reply_markup: mainMenuKeyboard()
+      }
+    );
+  });
+}
+
 async function botCheck(chatId) {
   await safeAction("botCheck", chatId, async () => {
     const progress = getUserProgress(chatId);
@@ -1591,6 +1629,11 @@ bot.onText(/\/check/, async (msg) => {
   await botCheck(chatId);
 });
 
+bot.onText(/\/progress/, async (msg) => {
+  const chatId = msg.chat.id;
+  await showMyProgress(chatId);
+});
+
 /*
   ======================================
   10. КНОПКИ
@@ -1623,6 +1666,11 @@ bot.on("callback_query", async (query) => {
     await botCheck(chatId);
     return;
   }
+
+  if (data === "my_progress") {
+  await showMyProgress(chatId);
+  return;
+}
 
   if (data.startsWith("lesson_open_")) {
     const lessonId = Number(data.replace("lesson_open_", ""));
@@ -1763,9 +1811,11 @@ bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  if (!text) return;
-  if (text.startsWith("/start")) return;
-  if (text.startsWith("/check")) return;
+if (!text) return;
+if (text.startsWith("/start")) return;
+if (text.startsWith("/check")) return;
+if (text.startsWith("/progress")) return;
+
 
   await safeAction("unknownMessage", chatId, async () => {
     await bot.sendMessage(
