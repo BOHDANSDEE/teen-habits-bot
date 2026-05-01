@@ -1057,6 +1057,7 @@ function mainMenuKeyboard() {
   return {
     inline_keyboard: [
       [{ text: "🚀 Почати курс", callback_data: "course_open" }],
+      [{ text: "▶️ Продовжити курс", callback_data: "continue_course" }],
       [{ text: "📊 Мій прогрес", callback_data: "my_progress" }],
       [{ text: "🧪 Перевірити бота", callback_data: "bot_check" }]
     ]
@@ -1553,6 +1554,36 @@ let message = "";
   ======================================
 */
 
+async function continueCourse(chatId) {
+  await safeAction("continueCourse", chatId, async () => {
+    const progress = getUserProgress(chatId);
+
+    const lessonId = Math.max(
+      0,
+      Math.min(progress.unlockedLessonId, lessons.length - 1)
+    );
+
+    const lesson = findLessonById(lessonId);
+
+    if (!lesson) {
+      await bot.sendMessage(chatId, "❌ Не вдалося знайти останній відкритий урок.", {
+        reply_markup: mainMenuKeyboard()
+      });
+      return;
+    }
+
+    await bot.sendMessage(
+      chatId,
+      `▶️ Продовжуємо курс
+
+Останній відкритий урок:
+${lesson.title}`
+    );
+
+    await showLesson(chatId, lessonId);
+  });
+}
+
 async function showMyProgress(chatId) {
   await safeAction("showMyProgress", chatId, async () => {
     const progress = getUserProgress(chatId);
@@ -1661,6 +1692,11 @@ bot.on("callback_query", async (query) => {
     await showCourse(chatId);
     return;
   }
+
+  if (data === "continue_course") {
+  await continueCourse(chatId);
+  return;
+}
 
   if (data === "bot_check") {
     await botCheck(chatId);
