@@ -1,6 +1,11 @@
 import TelegramBot from "node-telegram-bot-api";
 import "dotenv/config";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /*
   ======================================
@@ -70,6 +75,28 @@ function saveProgressToFile() {
 }
 
 const userProgress = loadProgressFromFile();
+
+const PROGRESS_IMAGES = [
+  path.join(__dirname, "assets", "progress", "progress_0.png"),
+  path.join(__dirname, "assets", "progress", "progress_1.png"),
+  path.join(__dirname, "assets", "progress", "progress_2.png"),
+  path.join(__dirname, "assets", "progress", "progress_3.png"),
+  path.join(__dirname, "assets", "progress", "progress_4.png"),
+  path.join(__dirname, "assets", "progress", "progress_5.png"),
+  path.join(__dirname, "assets", "progress", "progress_6.png"),
+  path.join(__dirname, "assets", "progress", "progress_7.png")
+];
+
+function getProgressImagePath(chatId) {
+  const progress = getUserProgress(chatId);
+
+  const stage = Math.max(
+    0,
+    Math.min(progress.unlockedLessonId, PROGRESS_IMAGES.length - 1)
+  );
+
+  return PROGRESS_IMAGES[stage];
+}
 
 function getUserProgress(chatId) {
   const key = String(chatId);
@@ -1391,20 +1418,38 @@ async function showCourse(chatId) {
   await safeAction("showCourse", chatId, async () => {
     const progress = getUserProgress(chatId);
 
-    await bot.sendMessage(
-      chatId,
-      `📚 Курс: “7 звичок підлітків”
+    const openedLessonsCount = progress.unlockedLessonId + 1;
+    const totalLessonsCount = lessons.length;
+    const completedTestsCount = Object.keys(progress.scores || {}).length;
 
-Відкрито до уроку: ${progress.unlockedLessonId} із 7.
+    const imagePath = getProgressImagePath(chatId);
+
+    console.log("🖼 Progress image path:", imagePath);
+console.log("🖼 Image exists:", fs.existsSync(imagePath));
+
+    const caption = `📚 Курс: “7 звичок підлітків”
+
+Відкрито уроків: ${openedLessonsCount}/${totalLessonsCount}
+Пройдено тестів: ${completedTestsCount}/${totalLessonsCount}
+
+Обери відкритий урок нижче.
 
 Щоб відкрити наступний урок, пройди тест:
-— 0–2/4: краще передивитися урок;
-— 3/4: можна йти далі, але краще повторити;
-— 4/4: ідеально, наступний урок відкривається.`,
-      {
+— 0–2/4: краще передивитися урок
+— 3/4: можна йти далі, але краще повторити
+— 4/4: ідеально, наступний урок відкривається.`;
+
+    if (fs.existsSync(imagePath)) {
+      await bot.sendPhoto(chatId, fs.createReadStream(imagePath), {
+        caption,
         reply_markup: lessonsKeyboard(chatId)
-      }
-    );
+      });
+      return;
+    }
+
+    await bot.sendMessage(chatId, caption, {
+      reply_markup: lessonsKeyboard(chatId)
+    });
   });
 }
 
@@ -1823,7 +1868,6 @@ async function showMyProgress(chatId) {
 
     const openedLessonsCount = progress.unlockedLessonId + 1;
     const totalLessonsCount = lessons.length;
-
     const completedTestsCount = Object.keys(progress.scores || {}).length;
 
     const resultsText = lessons
@@ -1838,12 +1882,32 @@ async function showMyProgress(chatId) {
       })
       .join("\n");
 
-    await bot.sendMessage(
-      chatId,
-      `📊 Мій прогрес
+    const imagePath = getProgressImagePath(chatId);
+
+    console.log("🖼 My progress image path:", imagePath);
+    console.log("🖼 My progress image exists:", fs.existsSync(imagePath));
+
+    if (fs.existsSync(imagePath)) {
+      await bot.sendPhoto(chatId, fs.createReadStream(imagePath), {
+        caption: `📊 Мій прогрес
 
 Відкрито уроків: ${openedLessonsCount}/${totalLessonsCount}
 Пройдено тестів: ${completedTestsCount}/${totalLessonsCount}
+
+Результати:
+${resultsText}`,
+        reply_markup: mainMenuKeyboard()
+      });
+
+      return;
+    }
+
+    await bot.sendMessage(
+      chatId,
+      `⚠️ Картинку прогресу не знайдено.
+
+Бот шукав файл тут:
+${imagePath}
 
 Результати:
 ${resultsText}`,
