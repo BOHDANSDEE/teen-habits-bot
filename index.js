@@ -3,6 +3,18 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import http from "http";
+
+const PORT = process.env.PORT || 10000;
+
+http
+  .createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Telegram bot is running");
+  })
+  .listen(PORT, () => {
+    console.log(`🌐 Web service слухає порт ${PORT}`);
+  });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
