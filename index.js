@@ -1492,6 +1492,23 @@ bot.onText(/\/progress/, async (msg) => {
   await showMyProgress(chatId);
 });
 
+bot.onText(/\/id/, async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  const username = msg.from.username ? `@${msg.from.username}` : "немає";
+
+  await bot.sendMessage(
+    chatId,
+    `🆔 Твоє Telegram ID: ${userId}
+
+💬 Chat ID: ${chatId}
+👤 Username: ${username}
+
+Для ADMIN_ID у .env можеш використати:
+ADMIN_ID=${userId}`
+  );
+});
+
 /*
   ======================================
   10. КНОПКИ
@@ -1678,6 +1695,7 @@ if (!text) return;
 if (text.startsWith("/start")) return;
 if (text.startsWith("/check")) return;
 if (text.startsWith("/progress")) return;
+if (text.startsWith("/id")) return;
 
 
   await safeAction("unknownMessage", chatId, async () => {
