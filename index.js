@@ -88,6 +88,142 @@ function saveProgressToFile() {
 
 const userProgress = loadProgressFromFile();
 
+/*
+  ======================================
+  СТАТИСТИКА БОТА
+  ======================================
+*/
+
+const STATS_FILE = "./stats.json";
+
+function createEmptyStats() {
+  return {
+    totalStarts: 0,
+    totalButtonClicks: 0,
+    totalTestsFinished: 0,
+    users: {},
+    events: []
+  };
+}
+
+function loadStatsFromFile() {
+  try {
+    if (!fs.existsSync(STATS_FILE)) {
+      return createEmptyStats();
+    }
+
+    const rawData = fs.readFileSync(STATS_FILE, "utf-8");
+
+    if (!rawData.trim()) {
+      return createEmptyStats();
+    }
+
+    return JSON.parse(rawData);
+  } catch (error) {
+    console.error("❌ Не вдалося завантажити stats.json:", error.message);
+    return createEmptyStats();
+  }
+}
+
+function saveStatsToFile() {
+  try {
+    fs.writeFileSync(STATS_FILE, JSON.stringify(botStats, null, 2), "utf-8");
+  } catch (error) {
+    console.error("❌ Не вдалося зберегти stats.json:", error.message);
+  }
+}
+
+const botStats = loadStatsFromFile();
+
+function isAdmin(chatId) {
+  return String(chatId) === String(process.env.ADMIN_ID);
+}
+
+function getNameFromUser(from) {
+  if (!from) return "Користувач";
+  if (from.username) return `@${from.username}`;
+
+  const fullName = `${from.first_name || ""} ${from.last_name || ""}`.trim();
+
+  return fullName || "Користувач";
+}
+
+function ensureStatsUser(chatId) {
+  const key = String(chatId);
+  const now = new Date().toISOString();
+
+  if (!botStats.users[key]) {
+    botStats.users[key] = {
+      chatId: key,
+      name: "Користувач",
+      firstSeen: now,
+      lastSeen: now,
+      starts: 0,
+      buttonClicks: 0,
+      testsFinished: 0
+    };
+  }
+
+  botStats.users[key].lastSeen = now;
+
+  return botStats.users[key];
+}
+
+function registerUser(chatId, from) {
+  const user = ensureStatsUser(chatId);
+
+  if (from) {
+    user.name = getNameFromUser(from);
+  }
+
+  user.lastSeen = new Date().toISOString();
+
+  return user;
+}
+
+function addEvent(type, chatId, extra = {}) {
+  botStats.events.push({
+    type,
+    chatId: String(chatId),
+    time: new Date().toISOString(),
+    ...extra
+  });
+
+  if (botStats.events.length > 200) {
+    botStats.events = botStats.events.slice(-200);
+  }
+}
+
+function getStatsText() {
+  const users = Object.values(botStats.users || {});
+  const totalUsers = users.length;
+
+  const lastUsers = users
+    .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen))
+    .slice(0, 10)
+    .map((user, index) => {
+      return `${index + 1}. ${user.name}
+ID: ${user.chatId}
+Перший вхід: ${user.firstSeen}
+Остання активність: ${user.lastSeen}
+/start: ${user.starts}
+Кнопки: ${user.buttonClicks}
+Тести: ${user.testsFinished}`;
+    })
+    .join("\n\n");
+
+  return `📊 Статистика бота
+
+👥 Унікальних користувачів: ${totalUsers}
+🚀 Запусків /start: ${botStats.totalStarts}
+🔘 Натискань кнопок: ${botStats.totalButtonClicks}
+🧠 Завершених тестів: ${botStats.totalTestsFinished}
+
+Останні активні користувачі:
+
+${lastUsers || "Поки немає даних."}`;
+}
+
 const PROGRESS_IMAGES = [
   path.join(__dirname, "assets", "progress", "progress_0.png"),
   path.join(__dirname, "assets", "progress", "progress_1.png"),
@@ -1314,6 +1450,18 @@ progress.scores[lessonId] = score;
 
 saveProgressToFile();
 
+ensureStatsUser(chatId);
+
+botStats.totalTestsFinished += 1;
+botStats.users[String(chatId)].testsFinished += 1;
+
+addEvent("test_finished", chatId, {
+  lessonId,
+  score
+});
+
+saveStatsToFile();
+
 let message = "";
 
   if (score <= 2) {
@@ -1479,6 +1627,15 @@ async function botCheck(chatId) {
 
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
+
+  registerUser(chatId, msg.from);
+
+  botStats.totalStarts += 1;
+  botStats.users[String(chatId)].starts += 1;
+
+  addEvent("start", chatId);
+  saveStatsToFile();
+
   await showStart(chatId);
 });
 
@@ -1509,6 +1666,17 @@ ADMIN_ID=${userId}`
   );
 });
 
+bot.onText(/\/stats/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  if (!isAdmin(chatId)) {
+    await bot.sendMessage(chatId, "⛔ У тебе немає доступу до статистики.");
+    return;
+  }
+
+  await bot.sendMessage(chatId, getStatsText());
+});
+
 /*
   ======================================
   10. КНОПКИ
@@ -1518,6 +1686,17 @@ ADMIN_ID=${userId}`
 bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
+
+    registerUser(chatId, query.from);
+
+  botStats.totalButtonClicks += 1;
+  botStats.users[String(chatId)].buttonClicks += 1;
+
+  addEvent("button_click", chatId, {
+    button: data
+  });
+
+  saveStatsToFile();
 
   try {
     await bot.answerCallbackQuery(query.id);
@@ -1696,6 +1875,7 @@ if (text.startsWith("/start")) return;
 if (text.startsWith("/check")) return;
 if (text.startsWith("/progress")) return;
 if (text.startsWith("/id")) return;
+if (text.startsWith("/stats")) return;
 
 
   await safeAction("unknownMessage", chatId, async () => {
