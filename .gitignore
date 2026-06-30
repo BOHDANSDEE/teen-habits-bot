@@ -14,3 +14,4 @@ yt-comment-bot/credentials.json
 yt-comment-bot/token.json
 yt-comment-bot/posted.json
 yt-comment-bot/*.log
+yt-comment-bot/api-key.txt
