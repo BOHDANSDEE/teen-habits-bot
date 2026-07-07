@@ -26,10 +26,18 @@ async function saveJson(filePath, data) {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2));
 }
 
+async function loadCredentialsData() {
+  if (process.env.CREDENTIALS_JSON) {
+    return JSON.parse(process.env.CREDENTIALS_JSON);
+  }
+
+  const credentialsContent = await fs.readFile(CREDENTIALS_PATH, "utf8");
+  return JSON.parse(credentialsContent);
+}
+
 async function loadSavedCredentials() {
   try {
-    const credentialsContent = await fs.readFile(CREDENTIALS_PATH, "utf8");
-    const credentials = JSON.parse(credentialsContent);
+    const credentials = await loadCredentialsData();
     const key = credentials.installed || credentials.web;
 
     const oauth2Client = new google.auth.OAuth2(
@@ -55,7 +63,7 @@ async function loadSavedCredentials() {
 
     return oauth2Client;
   } catch (error) {
-    console.log("⚠️ Не вдалося завантажити token.json:", error.message);
+    console.log("⚠️ Не вдалося завантажити OAuth дані:", error.message);
     return null;
   }
 }
@@ -63,8 +71,7 @@ async function loadSavedCredentials() {
 async function saveCredentials(client) {
   if (process.env.RENDER) return;
 
-  const content = await fs.readFile(CREDENTIALS_PATH, "utf8");
-  const keys = JSON.parse(content);
+  const keys = await loadCredentialsData();
   const key = keys.installed || keys.web;
 
   const payload = {
@@ -82,6 +89,12 @@ async function authorize() {
 
   if (client) {
     return client;
+  }
+
+  if (process.env.RENDER) {
+    throw new Error(
+      "На Render немає TOKEN_JSON або CREDENTIALS_JSON. Додай їх в Environment."
+    );
   }
 
   client = await authenticate({
@@ -176,8 +189,8 @@ async function checkAndComment() {
     return;
   }
 
-const uploadsPlaylistId = await getUploadsPlaylistId(youtube);
-const videos = await getLatestVideos(youtube, uploadsPlaylistId); 
+  const uploadsPlaylistId = await getUploadsPlaylistId(youtube);
+  const videos = await getLatestVideos(youtube, uploadsPlaylistId); 
 
   console.log(`🔎 Знайдено відео: ${videos.length}`);
 
