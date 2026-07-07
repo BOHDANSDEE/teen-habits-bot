@@ -9,15 +9,10 @@ const CREDENTIALS_PATH = path.join(process.cwd(), "credentials.json");
 const TOKEN_PATH = path.join(process.cwd(), "token.json");
 const POSTED_PATH = path.join(process.cwd(), "posted.json");
 const COMMENTS_PATH = path.join(process.cwd(), "comments.json");
-const API_KEY_PATH = path.join(process.cwd(), "api-key.txt");
 
 const CHECK_EVERY_MS = 5 * 60 * 1000;
 const MAX_RESULTS = 1;
 
-async function loadApiKey() {
-  if (process.env.API_KEY) return process.env.API_KEY.trim();
-  return (await fs.readFile(API_KEY_PATH, "utf8")).trim();
-}
 
 async function loadJson(filePath, fallback) {
   try {
@@ -33,13 +28,34 @@ async function saveJson(filePath, data) {
 
 async function loadSavedCredentials() {
   try {
+    const credentialsContent = await fs.readFile(CREDENTIALS_PATH, "utf8");
+    const credentials = JSON.parse(credentialsContent);
+    const key = credentials.installed || credentials.web;
+
+    const oauth2Client = new google.auth.OAuth2(
+      key.client_id,
+      key.client_secret,
+      key.redirect_uris?.[0] || "http://localhost"
+    );
+
+    let token;
+
     if (process.env.TOKEN_JSON) {
-      return google.auth.fromJSON(JSON.parse(process.env.TOKEN_JSON));
+      token = JSON.parse(process.env.TOKEN_JSON);
+    } else {
+      const tokenContent = await fs.readFile(TOKEN_PATH, "utf8");
+      token = JSON.parse(tokenContent);
     }
 
-    const content = await fs.readFile(TOKEN_PATH, "utf8");
-    return google.auth.fromJSON(JSON.parse(content));
-  } catch {
+    oauth2Client.setCredentials({
+      refresh_token: token.refresh_token
+    });
+
+    await oauth2Client.getAccessToken();
+
+    return oauth2Client;
+  } catch (error) {
+    console.log("⚠️ Не вдалося завантажити token.json:", error.message);
     return null;
   }
 }
@@ -65,7 +81,6 @@ async function authorize() {
   let client = await loadSavedCredentials();
 
   if (client) {
-    google.options({ auth: client });
     return client;
   }
 
@@ -76,7 +91,12 @@ async function authorize() {
 
   await saveCredentials(client);
 
-  google.options({ auth: client });
+  client = await loadSavedCredentials();
+
+  if (!client) {
+    throw new Error("Не вдалося створити OAuth client після авторизації.");
+  }
+
   return client;
 }
 
@@ -86,11 +106,11 @@ function pickRandomComment(comments) {
 
 const CHANNEL_ID = "UCFfKrEzbnX7smKtF6w3P4lw";
 
-async function getUploadsPlaylistId(youtube, apiKey) {
+
+async function getUploadsPlaylistId(youtube) {
   const res = await youtube.channels.list({
     part: ["contentDetails"],
-    id: [CHANNEL_ID],
-    key: apiKey
+    id: [CHANNEL_ID]
   });
 
   const channel = res.data.items?.[0];
@@ -102,12 +122,11 @@ async function getUploadsPlaylistId(youtube, apiKey) {
   return channel.contentDetails.relatedPlaylists.uploads;
 }
 
-async function getLatestVideos(youtube, uploadsPlaylistId, apiKey) {
+async function getLatestVideos(youtube, uploadsPlaylistId) {
   const res = await youtube.playlistItems.list({
     part: ["snippet"],
     playlistId: uploadsPlaylistId,
-    maxResults: MAX_RESULTS,
-    key: apiKey
+    maxResults: MAX_RESULTS
   });
 
   return (res.data.items || [])
@@ -120,10 +139,14 @@ async function getLatestVideos(youtube, uploadsPlaylistId, apiKey) {
 }
 
 async function postComment(auth, videoId, text) {
-  const youtube = google.youtube({ version: "v3", auth });
+  await auth.getAccessToken();
+
+  const youtube = google.youtube({
+    version: "v3",
+    auth
+  });
 
   const res = await youtube.commentThreads.insert({
-    auth,
     part: ["snippet"],
     requestBody: {
       snippet: {
@@ -142,10 +165,8 @@ async function postComment(auth, videoId, text) {
 
 async function checkAndComment() {
   const auth = await authorize();
-  google.options({ auth });
 
-  const apiKey = await loadApiKey();
-const youtube = google.youtube({ version: "v3", auth });
+  const youtube = google.youtube({ version: "v3", auth });
 
   const comments = await loadJson(COMMENTS_PATH, []);
   const posted = await loadJson(POSTED_PATH, {});
@@ -155,8 +176,8 @@ const youtube = google.youtube({ version: "v3", auth });
     return;
   }
 
-const uploadsPlaylistId = await getUploadsPlaylistId(youtube, apiKey);
-const videos = await getLatestVideos(youtube, uploadsPlaylistId, apiKey);
+const uploadsPlaylistId = await getUploadsPlaylistId(youtube);
+const videos = await getLatestVideos(youtube, uploadsPlaylistId); 
 
   console.log(`🔎 Знайдено відео: ${videos.length}`);
 
