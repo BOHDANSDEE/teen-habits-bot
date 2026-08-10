@@ -1,0 +1,26 @@
+name: HabitTeen bot test
+
+on:
+  push:
+    branches:
+      - feat/content-pools-100-and-30-levels-20260810
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --check index.js
+      - run: node --check src/levels-45.js
+      - run: node --check src/content.js
+      - run: node --check src/pools.js
+      - run: node --check src/renderer.js
+      - run: npm test

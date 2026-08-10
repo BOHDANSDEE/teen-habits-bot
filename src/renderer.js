@@ -1,8 +1,8 @@
 import {
   CONTINUATION_BRIDGES,
   FEELING_INTROS,
-  getFirstLevelKey,
   getLevel,
+  getRandomLevelKey,
   getRandomRelatedTheme,
   getSubtheme,
   pickRandom
@@ -13,40 +13,46 @@ export function buildResult(themeKey, levelKey) {
   const level = getLevel(themeKey, levelKey);
   if (!theme || !level) return null;
 
+  const pools = theme.pools || {};
+
   return {
     themeKey,
     levelKey,
+    articleSlug: level.articleSlug,
+    articleTitle: level.articleTitle,
     text: `${pickRandom(FEELING_INTROS)}
+
+🎯 *${level.articleTitle}*
 
 ${level.summary}
 
 🔹 Стан
-${pickRandom(level.states)}
+${pickRandom(pools.states)}
 
 🔹 Проблема
-${pickRandom(level.problems)}
+${pickRandom(pools.problems)}
 
-🔹 Можлива вторинна вигода
-${pickRandom(level.secondaryGains)}
+🔹 Вторинна вигода
+${pickRandom(pools.secondaryGains)}
 
 🔹 Значення в житті
-${pickRandom(level.meanings)}
+${pickRandom(pools.meanings)}
 
 🔹 Що зробити зараз
 ${pickRandom(level.actions)}
 
 🔑 Афірмація
-${pickRandom(level.affirmations)}
+${pickRandom(pools.affirmations)}
 
-Прочитай афірмацію 1–3 рази, якщо вона тобі підходить. Якщо ні — сформулюй її своїми словами.
+Прочитай афірмацію повільно 1–3 рази. За бажанням переформулюй її своїми словами, зберігши головний сенс.
 
-_Це не діагноз і не оцінка характеру. Блок допомагає перевірити одну з можливих причин і вибрати наступну дію._`
+_Це не медичний діагноз. Блок розбирає обраний поведінковий і емоційний патерн та переводить його в конкретну наступну дію._`
   };
 }
 
 export function buildContinuation(previousThemeKey) {
   const themeKey = getRandomRelatedTheme(previousThemeKey);
-  const levelKey = getFirstLevelKey(themeKey);
+  const levelKey = getRandomLevelKey(themeKey);
   const theme = getSubtheme(themeKey);
   const result = buildResult(themeKey, levelKey);
 
