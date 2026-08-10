@@ -4,7 +4,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "start:pilot": "node pilot-v2/index.js",
+    "demo:pilot": "node pilot-v2/demo.js",
+    "test:pilot": "node --test pilot-v2/*.test.js"
   },
   "keywords": [],
   "author": "",
