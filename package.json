@@ -1,15 +1,16 @@
 {
   "name": "teen-habits-bot",
-  "version": "1.0.0",
+  "version": "2.0.0-prototype",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node tests/prototype.test.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "HabitTeen Telegram helper prototype",
   "dependencies": {
     "dotenv": "^17.4.2",
     "node-telegram-bot-api": "^0.67.0"
