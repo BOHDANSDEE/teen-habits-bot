@@ -7,6 +7,13 @@ import {
   getSubtheme,
   pickRandom
 } from "./content.js";
+import { expandSection } from "./rich-copy.js";
+
+const formatActions = (actions = []) =>
+  actions
+    .slice(0, 3)
+    .map((action, index) => `${["1️⃣", "2️⃣", "3️⃣"][index]} ${action}`)
+    .join("\n");
 
 export function buildResult(themeKey, levelKey) {
   const theme = getSubtheme(themeKey);
@@ -14,6 +21,19 @@ export function buildResult(themeKey, levelKey) {
   if (!theme || !level) return null;
 
   const pools = theme.pools || {};
+  const state = expandSection(themeKey, "states", pickRandom(pools.states));
+  const problem = expandSection(themeKey, "problems", pickRandom(pools.problems));
+  const secondaryGain = expandSection(
+    themeKey,
+    "secondaryGains",
+    pickRandom(pools.secondaryGains)
+  );
+  const meaning = expandSection(themeKey, "meanings", pickRandom(pools.meanings));
+  const affirmation = expandSection(
+    themeKey,
+    "affirmations",
+    pickRandom(pools.affirmations)
+  );
 
   return {
     themeKey,
@@ -22,31 +42,33 @@ export function buildResult(themeKey, levelKey) {
     articleTitle: level.articleTitle,
     text: `${pickRandom(FEELING_INTROS)}
 
-🎯 *${level.articleTitle}*
+🎯✨ *${level.articleTitle}*
 
-${level.summary}
+🧭 ${level.summary}
 
-🔹 Стан
-${pickRandom(pools.states)}
+🌿🧠 *Стан*
+${state}
 
-🔹 Проблема
-${pickRandom(pools.problems)}
+🧩⚠️ *Проблема*
+${problem}
 
-🔹 Вторинна вигода
-${pickRandom(pools.secondaryGains)}
+🪞🎁 *Вторинна вигода*
+${secondaryGain}
 
-🔹 Значення в житті
-${pickRandom(pools.meanings)}
+🌟🧭 *Значення в житті*
+${meaning}
 
-🔹 Що зробити зараз
-${pickRandom(level.actions)}
+🚀✅ *Що зробити зараз*
+${formatActions(level.actions)}
 
-🔑 Афірмація
-${pickRandom(pools.affirmations)}
+🔑✨ *Афірмація*
+${affirmation}
 
-Прочитай афірмацію повільно 1–3 рази. За бажанням переформулюй її своїми словами, зберігши головний сенс.
+🕯️ Прочитай афірмацію повільно 3 рази. Не поспішай: важливо не просто повторити слова, а співвіднести їх зі своєю реальною ситуацією та наступною дією.
 
-_Це не медичний діагноз. Блок розбирає обраний поведінковий і емоційний патерн та переводить його в конкретну наступну дію._`
+💚 Один розбір не зобов’язує вирішити все одразу. Якщо відчуваєш, що тема зачепила лише частину ситуації, натисни «Хочу ще рішення» — бот продовжить із пов’язаного рівня.
+
+_Це не медичний діагноз. Блок допомагає розібрати обраний поведінковий та емоційний патерн, побачити його функцію і перейти до конкретної дії._`
   };
 }
 
@@ -60,10 +82,6 @@ export function buildContinuation(previousThemeKey) {
 
   return {
     ...result,
-    text: `🔄 Продовження: ${theme.name}
-
-${pickRandom(CONTINUATION_BRIDGES)}
-
-${result.text}`
+    text: `🔄✨ Продовження: ${theme.name}\n\n${pickRandom(CONTINUATION_BRIDGES)}\n\n${result.text}`
   };
 }
