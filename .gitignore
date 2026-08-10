@@ -1,14 +1,16 @@
 node_modules/
 .env
-
-# old / paused Telegram bot update files
-data/
-utils/
-storage/
-bot-v2.js
+runtime/
 progress.json
 stats.json
-assets/
+
+# local / archived prototypes
+bot-v2.js
+storage/
+utils/
+data/
+
+# YouTube helper secrets and runtime files
 yt-comment-bot/node_modules/
 yt-comment-bot/credentials.json
 yt-comment-bot/token.json
