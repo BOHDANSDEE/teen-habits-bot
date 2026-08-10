@@ -1,4 +1,4 @@
-import { LEVELS_BY_THEME } from "./levels.js";
+import { LEVELS_BY_THEME } from "./levels-45.js";
 import { THEME_POOLS } from "./pools.js";
 
 export const MAIN_BLOCK = {
@@ -10,21 +10,21 @@ export const MAIN_BLOCK = {
     lazy: {
       name: "😴 Лінь",
       description:
-        "Бар’єр старту, втома, мотивація, сон, великі задачі, самодисципліна та середовище.",
+        "Бар’єр старту, втома, мотивація, сон, звички, самодисципліна та середовище.",
       pools: THEME_POOLS.lazy,
       levels: LEVELS_BY_THEME.lazy
     },
     apathy: {
       name: "🌫 Апатія",
       description:
-        "Зниження енергії та інтересу, сонливість, стрес, вигорання, підтримка й межі самодопомоги.",
+        "Зниження енергії та інтересу, сонливість, стрес, вигорання, ізоляція, підтримка й межі самодопомоги.",
       pools: THEME_POOLS.apathy,
       levels: LEVELS_BY_THEME.apathy
     },
     procrastination: {
       name: "⏳ Прокрастинація",
       description:
-        "Відкладання, тривога, перфекціонізм, навчання, дедлайни, телефон, сон і робочі інтервали.",
+        "Відкладання, перфекціонізм, навчання, дедлайни, увага, пріоритети, завершення справ і швидка винагорода.",
       pools: THEME_POOLS.procrastination,
       levels: LEVELS_BY_THEME.procrastination
     }
