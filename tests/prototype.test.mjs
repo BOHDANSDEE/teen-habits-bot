@@ -26,7 +26,7 @@ for (const themeKey of expectedThemes) {
   const theme = MAIN_BLOCK.subthemes[themeKey];
   const levelKeys = Object.keys(theme.levels);
 
-  assert.equal(levelKeys.length, 10, `${themeKey} must have exactly 10 article-based levels`);
+  assert.equal(levelKeys.length, 15, `${themeKey} must have exactly 15 article-based levels`);
 
   for (const poolName of poolNames) {
     const pool = theme.pools[poolName];
@@ -96,7 +96,7 @@ for (const text of [...FEELING_INTROS, ...CONTINUATION_BRIDGES]) {
   assert.ok(!/можлив|ймовірн|схоже на/i.test(text), `direct-tone text contains hedging: ${text}`);
 }
 
-assert.equal(allArticleSlugs.size, 30, "bot must map exactly 30 unique article topics");
+assert.equal(allArticleSlugs.size, 45, "bot must map exactly 45 unique article topics");
 assert.equal(totalPoolItems, 7500, "bot must expose exactly 7,500 pool items");
 
-console.log("✅ HabitTeen v2 content test passed: 30 levels + 15 pools × 500 unique direct-tone items");
+console.log("✅ HabitTeen v2 content test passed: 45 levels + 15 pools × 500 unique direct-tone items");
