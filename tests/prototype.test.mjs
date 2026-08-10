@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import {
+  CONTINUATION_BRIDGES,
+  FEELING_INTROS,
   MAIN_BLOCK,
   getLevel,
   getRandomLevelKey
@@ -18,6 +20,7 @@ const poolNames = [
 assert.deepEqual(Object.keys(MAIN_BLOCK.subthemes), expectedThemes);
 
 const allArticleSlugs = new Set();
+let totalPoolItems = 0;
 
 for (const themeKey of expectedThemes) {
   const theme = MAIN_BLOCK.subthemes[themeKey];
@@ -27,12 +30,18 @@ for (const themeKey of expectedThemes) {
 
   for (const poolName of poolNames) {
     const pool = theme.pools[poolName];
-    assert.equal(pool.length, 100, `${themeKey}.${poolName} must contain exactly 100 items`);
+    assert.equal(pool.length, 500, `${themeKey}.${poolName} must contain exactly 500 items`);
     assert.equal(
       new Set(pool).size,
-      100,
-      `${themeKey}.${poolName} must contain 100 unique items`
+      500,
+      `${themeKey}.${poolName} must contain 500 unique items`
     );
+
+    for (const item of pool) {
+      assert.ok(!/можлив|ймовірн|схоже на/i.test(item), `${themeKey}.${poolName} contains hedging: ${item}`);
+    }
+
+    totalPoolItems += pool.length;
   }
 
   for (const levelKey of levelKeys) {
@@ -53,16 +62,19 @@ for (const themeKey of expectedThemes) {
     for (const marker of [
       "🔹 Стан",
       "🔹 Проблема",
-      "🔹 Можлива вторинна вигода",
+      "🔹 Вторинна вигода",
       "🔹 Значення в житті",
       "🔹 Що зробити зараз",
       "🔑 Афірмація"
     ]) {
       assert.ok(result.text.includes(marker), `${themeKey}.${levelKey} is missing ${marker}`);
     }
+
+    assert.ok(!result.text.includes("Можлива вторинна вигода"));
+    assert.ok(!/ймовірн/i.test(result.text));
   }
 
-  for (let i = 0; i < 50; i += 1) {
+  for (let i = 0; i < 100; i += 1) {
     const randomLevelKey = getRandomLevelKey(themeKey);
     assert.ok(theme.levels[randomLevelKey], `${themeKey} random level must exist`);
 
@@ -80,6 +92,11 @@ for (const themeKey of expectedThemes) {
   }
 }
 
-assert.equal(allArticleSlugs.size, 30, "bot must map exactly 30 unique article topics");
+for (const text of [...FEELING_INTROS, ...CONTINUATION_BRIDGES]) {
+  assert.ok(!/можлив|ймовірн|схоже на/i.test(text), `direct-tone text contains hedging: ${text}`);
+}
 
-console.log("✅ HabitTeen v2 content test passed: 30 levels + 15 pools × 100 unique items");
+assert.equal(allArticleSlugs.size, 30, "bot must map exactly 30 unique article topics");
+assert.equal(totalPoolItems, 7500, "bot must expose exactly 7,500 pool items");
+
+console.log("✅ HabitTeen v2 content test passed: 30 levels + 15 pools × 500 unique direct-tone items");
