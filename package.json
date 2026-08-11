@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "test": "node tests/prototype.test.mjs"
+    "test": "node tests/prototype.test.mjs && node tests/navigation-grid.test.mjs"
   },
   "keywords": [],
   "author": "",
