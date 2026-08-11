@@ -76,7 +76,6 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
   const pageEntries = meta.entries.slice(meta.start, meta.end);
   const rows = [];
 
-  // Компактна сітка: максимум 8 рівнів = 2 стовпчики × 4 рядки.
   for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
     rows.push(
       pageEntries.slice(index, index + LEVEL_COLUMNS).map(([levelKey, level]) => ({
@@ -119,6 +118,16 @@ export function resultKeyboard(blockKey, themeKey, levelKey, page = 0) {
           callback_data: `reroll:${blockKey}:${themeKey}:${levelKey}:${page}`
         }
       ],
+      [{ text: "⬅️📚 До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
+      [{ text: "⬅️🧩 До блоку", callback_data: `block:${blockKey}` }],
+      [{ text: "🏠✨ Головне меню", callback_data: "home" }]
+    ]
+  };
+}
+
+export function starterResultKeyboard(blockKey, themeKey, page = 0) {
+  return {
+    inline_keyboard: [
       [{ text: "⬅️📚 До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
       [{ text: "⬅️🧩 До блоку", callback_data: `block:${blockKey}` }],
       [{ text: "🏠✨ Головне меню", callback_data: "home" }]

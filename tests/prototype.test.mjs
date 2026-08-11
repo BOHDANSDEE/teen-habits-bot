@@ -6,11 +6,14 @@ import {
   getLevel,
   getRandomLevelKey
 } from "../src/content.js";
+import { FUTURE_BLOCKS } from "../src/future-blocks.js";
+import { buildGenericResult } from "../src/generic-result.js";
 import {
   LEVELS_PER_PAGE,
   levelsKeyboard,
   mainMenuKeyboard,
   resultKeyboard,
+  starterResultKeyboard,
   subthemesKeyboard
 } from "../src/navigation-keyboards.js";
 import {
@@ -25,6 +28,7 @@ import { buildContinuation, buildResult } from "../src/renderer.js";
 const PRIMARY_BLOCK_KEY = "state_action";
 const expectedThemes = ["lazy", "apathy", "procrastination"];
 const poolNames = ["states", "problems", "secondaryGains", "meanings", "affirmations"];
+const futureBlockKeys = ["wellbeing", "growth", "future", "relations", "life"];
 
 function flattenButtons(keyboard) {
   return keyboard.inline_keyboard.flat();
@@ -40,33 +44,39 @@ function assertCallbackSizes(keyboard) {
 }
 
 assert.deepEqual(Object.keys(MAIN_BLOCK.subthemes), expectedThemes);
+assert.deepEqual(Object.keys(FUTURE_BLOCKS), futureBlockKeys);
 assert.equal(LEVELS_PER_PAGE, 8, "level pagination must show 8 items per page");
-assert.equal(RESERVED_BLOCK_SLOTS.length, 8, "architecture must keep reserved future block slots");
+assert.equal(RESERVED_BLOCK_SLOTS.length, 8, "architecture must keep extra reserved slots");
 assert.ok(RESERVED_BLOCK_SLOTS.every((slot) => slot.enabled === false));
-assert.equal(getActiveBlocks().length, 1, "reserved future blocks must stay hidden until configured");
-assert.equal(getAllLevelTargets().length, 45, "all active levels must be available to recommendations");
+assert.equal(getActiveBlocks().length, 6, "main block plus five starter blocks must be active");
+assert.equal(getAllLevelTargets().length, 60, "45 mature levels + 15 starter levels must be discoverable");
 
 const recommendation = getRandomRecommendation();
 assert.ok(recommendation, "main menu must be able to recommend a level");
-assert.equal(recommendation.blockKey, PRIMARY_BLOCK_KEY);
-assert.ok(expectedThemes.includes(recommendation.themeKey));
+assert.ok(getActiveBlocks().some((block) => block.key === recommendation.blockKey));
 assert.ok(recommendation.level?.articleSlug);
 
 const homeKeyboard = mainMenuKeyboard(recommendation);
 assert.equal(
   homeKeyboard.inline_keyboard.length,
-  3,
-  "home shows recommendation, one active block and about button"
+  8,
+  "home shows recommendation, six active blocks and about button"
 );
 assert.ok(
   flattenButtons(homeKeyboard).some((button) => button.callback_data.startsWith("recommend:")),
   "home must expose the recommended level action"
 );
-assert.ok(!flattenButtons(homeKeyboard).some((button) => /future_/i.test(button.callback_data)));
+for (const blockKey of [PRIMARY_BLOCK_KEY, ...futureBlockKeys]) {
+  assert.ok(
+    flattenButtons(homeKeyboard).some((button) => button.callback_data === `block:${blockKey}`),
+    `home must expose block ${blockKey}`
+  );
+}
+assert.ok(!flattenButtons(homeKeyboard).some((button) => /block:future_/i.test(button.callback_data)));
 assertCallbackSizes(homeKeyboard);
 
 const blockKeyboard = subthemesKeyboard(PRIMARY_BLOCK_KEY);
-assert.equal(blockKeyboard.inline_keyboard.length, 4, "block shows 3 subthemes plus main menu");
+assert.equal(blockKeyboard.inline_keyboard.length, 4, "primary block shows 3 subthemes plus main menu");
 assertCallbackSizes(blockKeyboard);
 
 const allArticleSlugs = new Set();
@@ -204,6 +214,80 @@ for (const themeKey of expectedThemes) {
   }
 }
 
+const starterSlugs = new Set();
+let starterLevelCount = 0;
+
+for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
+  assert.equal(block.enabled, true, `${blockKey} must be visible`);
+  assert.equal(block.siteStatus, "planned", `${blockKey} must be marked as a planned-site starter`);
+  assert.equal(Object.keys(block.subthemes).length, 3, `${blockKey} must start with 3 subthemes`);
+
+  const subthemes = subthemesKeyboard(blockKey);
+  assert.equal(subthemes.inline_keyboard.length, 4, `${blockKey} shows 3 subthemes plus home`);
+  assertCallbackSizes(subthemes);
+
+  for (const [themeKey, theme] of Object.entries(block.subthemes)) {
+    const levelEntries = Object.entries(theme.levels);
+    assert.equal(levelEntries.length, 1, `${blockKey}.${themeKey} must start with exactly one level`);
+    const [[levelKey, level]] = levelEntries;
+    starterLevelCount += 1;
+
+    assert.ok(level.articleTitle);
+    assert.ok(level.articleSlug);
+    assert.ok(level.summary);
+    assert.ok(level.state);
+    assert.ok(level.problem);
+    assert.ok(level.secondaryGain);
+    assert.ok(level.meaning);
+    assert.equal(level.actions.length, 3);
+    assert.ok(level.affirmation);
+    assert.ok(!starterSlugs.has(level.articleSlug), `duplicate starter slug: ${level.articleSlug}`);
+    assert.ok(!allArticleSlugs.has(level.articleSlug), `starter slug collides with HabitTeen: ${level.articleSlug}`);
+    starterSlugs.add(level.articleSlug);
+
+    const target = findLevelByArticleSlug(level.articleSlug);
+    assert.ok(target, `starter slug must resolve: ${level.articleSlug}`);
+    assert.equal(target.blockKey, blockKey);
+    assert.equal(target.themeKey, themeKey);
+    assert.equal(target.levelKey, levelKey);
+
+    const startPayload = `article_${level.articleSlug}`;
+    assert.match(startPayload, /^[A-Za-z0-9_-]+$/);
+    assert.ok(Buffer.byteLength(startPayload, "utf8") <= 64, `starter deep-link too long: ${startPayload}`);
+
+    const keyboard = levelsKeyboard(blockKey, themeKey, 0);
+    const levelButtons = flattenButtons(keyboard).filter((button) => button.callback_data.startsWith("level:"));
+    assert.equal(levelButtons.length, 1);
+    assertCallbackSizes(keyboard);
+
+    const result = buildGenericResult(blockKey, themeKey, levelKey);
+    assert.ok(result, `${blockKey}.${themeKey} must build a starter result`);
+    assert.ok(result.text.includes(block.name));
+    assert.ok(result.text.includes(theme.name));
+    assert.ok(result.text.includes(level.articleTitle));
+    assert.ok(result.text.includes("🌿🧠 *Стан*"));
+    assert.ok(result.text.includes("🧩⚠️ *Проблема*"));
+    assert.ok(result.text.includes("🪞🎁 *Вторинна вигода*"));
+    assert.ok(result.text.includes("🌟🧭 *Значення в житті*"));
+    assert.ok(result.text.includes("1️⃣"));
+    assert.ok(result.text.includes("2️⃣"));
+    assert.ok(result.text.includes("3️⃣"));
+    assert.ok(result.text.includes("🔑✨ *Афірмація*"));
+    assert.ok(result.text.length < 4000, `${blockKey}.${themeKey} result exceeds Telegram limit`);
+
+    const resultNav = starterResultKeyboard(blockKey, themeKey, 0);
+    const callbacks = flattenButtons(resultNav).map((button) => button.callback_data);
+    assert.ok(callbacks.includes(`levels:${blockKey}:${themeKey}:0`));
+    assert.ok(callbacks.includes(`block:${blockKey}`));
+    assert.ok(callbacks.includes("home"));
+    assert.ok(!callbacks.some((callback) => callback.startsWith("solution:")));
+    assert.ok(!callbacks.some((callback) => callback.startsWith("reroll:")));
+    assertCallbackSizes(resultNav);
+  }
+}
+
+assert.equal(starterLevelCount, 15, "five starter blocks × three subthemes must expose 15 starter levels");
+assert.equal(starterSlugs.size, 15);
 assert.equal(findLevelByArticleSlug("not-a-real-article"), null);
 
 for (const text of [...FEELING_INTROS, ...CONTINUATION_BRIDGES]) {
@@ -213,9 +297,9 @@ for (const text of [...FEELING_INTROS, ...CONTINUATION_BRIDGES]) {
   );
 }
 
-assert.equal(allArticleSlugs.size, 45, "bot must map exactly 45 unique article topics");
-assert.equal(totalPoolItems, 7500, "bot must expose exactly 7,500 pool items");
+assert.equal(allArticleSlugs.size, 45, "HabitTeen must keep exactly 45 mature article topics");
+assert.equal(totalPoolItems, 7500, "HabitTeen must keep exactly 7,500 pool items");
 
 console.log(
-  "✅ HabitTeen recommendation/deep-link test passed: 45 article links, random home recommendation, 7,500 pool items"
+  "✅ HabitTeen multi-block test passed: 45 mature levels + 15 starter levels across 5 future-site blocks"
 );
