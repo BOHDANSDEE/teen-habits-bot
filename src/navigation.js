@@ -1,16 +1,19 @@
 import { MAIN_BLOCK } from "./content.js";
+import { FUTURE_BLOCKS } from "./future-blocks.js";
 
 // Єдина точка реєстрації великих блоків бота.
-// Нові сайти/напрями додаються сюди як окремі блоки без переписування навігації.
+// HabitTeen лишається основним повним блоком, а FUTURE_BLOCKS — робочі заготовки
+// майбутніх тематичних сайтів із одним стартовим рівнем на кожен підблок.
 export const BLOCKS = {
   [MAIN_BLOCK.key]: {
     ...MAIN_BLOCK,
-    enabled: true
-  }
+    enabled: true,
+    siteStatus: "live"
+  },
+  ...FUTURE_BLOCKS
 };
 
-// Резервні слоти — це закладки в архітектурі, а не видимі кнопки.
-// Коли будуть обрані теми майбутніх сайтів, слот перетворюється на реальний BLOCKS-елемент.
+// Додаткові резервні слоти лишаються прихованими до появи нових напрямів.
 export const RESERVED_BLOCK_SLOTS = Object.freeze(
   Array.from({ length: 8 }, (_, index) => ({
     key: `future_${index + 1}`,
