@@ -2,6 +2,7 @@ import { decorateLevelName } from "./rich-copy.js";
 import { getActiveBlocks, getBlock, getBlockSubtheme } from "./navigation.js";
 
 export const LEVELS_PER_PAGE = 8;
+export const LEVEL_COLUMNS = 2;
 
 function normalizePage(page, totalPages) {
   const numeric = Number.parseInt(page, 10);
@@ -55,10 +56,17 @@ export function subthemesKeyboard(blockKey) {
 
 export function levelsKeyboard(blockKey, themeKey, page = 0) {
   const meta = getLevelsPageMeta(blockKey, themeKey, page);
-  const rows = meta.entries.slice(meta.start, meta.end).map(([levelKey, level]) => [{
-    text: decorateLevelName(themeKey, levelKey, level.name),
-    callback_data: `level:${blockKey}:${themeKey}:${levelKey}:${meta.page}`
-  }]);
+  const pageEntries = meta.entries.slice(meta.start, meta.end);
+  const rows = [];
+
+  // Рівні показуємо компактною сіткою: 2 кнопки × 4 рядки на сторінці.
+  for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
+    const row = pageEntries.slice(index, index + LEVEL_COLUMNS).map(([levelKey, level]) => ({
+      text: decorateLevelName(themeKey, levelKey, level.name),
+      callback_data: `level:${blockKey}:${themeKey}:${levelKey}:${meta.page}`
+    }));
+    rows.push(row);
+  }
 
   if (meta.totalPages > 1) {
     const pagination = [];
