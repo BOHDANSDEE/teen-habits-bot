@@ -25,7 +25,21 @@ assert.match(source, /"article-deeplink",\s*null\s*\)/s, "article deep-link must
 assert.match(source, /await showHome\(msg\.chat\.id, null\);/, "manual /start must open a fresh menu message");
 assert.match(source, /await retirePromise;/, "old menu cleanup must complete after fresh rendering starts");
 assert.doesNotMatch(source, /"article-deeplink",\s*user\.menuMessageId/s, "article deep-link must not edit a stale menu message");
+
+assert.match(source, /Що ти зараз відчуваєш\?/, "home copy must speak directly to the person");
+assert.match(source, /data === "hint:block"/, "first hint step must select only a block");
+assert.match(source, /data\.startsWith\("hint:theme:"\)/, "second hint step must select a subtheme");
+assert.match(source, /data\.startsWith\("hint:level:"\)/, "third hint step must select a level");
+assert.match(source, /getRandomBlockHint\(\)/, "block hint helper must be used");
+assert.match(source, /getRandomThemeHint\(blockKey\)/, "subtheme hint helper must be used");
+assert.match(source, /getRandomLevelHint\(blockKey, themeKey\)/, "level hint helper must be used");
+assert.match(
+  source,
+  /if \(data\.startsWith\("recommend:"\)\)[\s\S]*?await showHome\(/,
+  "legacy recommendation buttons must return to staged choice instead of opening the final result"
+);
+
 assert.doesNotMatch(source, /bot\.on\(["']polling_error["']/, "polling error listener should be removed");
 assert.doesNotMatch(source, /polling:\s*true/, "long polling must not be enabled");
 
-console.log("✅ HabitTeen webhook/start test passed: stable webhook + fresh /start menu behavior enabled");
+console.log("✅ HabitTeen webhook/start test passed: stable webhook + fresh start + staged hints");
