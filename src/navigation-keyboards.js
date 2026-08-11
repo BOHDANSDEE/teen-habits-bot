@@ -59,13 +59,14 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
   const pageEntries = meta.entries.slice(meta.start, meta.end);
   const rows = [];
 
-  // Рівні показуємо компактною сіткою: 2 кнопки × 4 рядки на сторінці.
+  // 8 рівнів на сторінці: 2 стовпчики × 4 рядки.
   for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
-    const row = pageEntries.slice(index, index + LEVEL_COLUMNS).map(([levelKey, level]) => ({
-      text: decorateLevelName(themeKey, levelKey, level.name),
-      callback_data: `level:${blockKey}:${themeKey}:${levelKey}:${meta.page}`
-    }));
-    rows.push(row);
+    rows.push(
+      pageEntries.slice(index, index + LEVEL_COLUMNS).map(([levelKey, level]) => ({
+        text: decorateLevelName(themeKey, levelKey, level.name),
+        callback_data: `level:${blockKey}:${themeKey}:${levelKey}:${meta.page}`
+      }))
+    );
   }
 
   if (meta.totalPages > 1) {
