@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import "dotenv/config";
 import http from "http";
+import { createHash, timingSafeEqual } from "crypto";
 import {
   findLevelByArticleSlug,
   getBlock,
@@ -25,28 +26,112 @@ const adminId = process.env.ADMIN_ID;
 const PORT = process.env.PORT || 10000;
 const PRIMARY_BLOCK_KEY = "state_action";
 const ARTICLE_START_PREFIX = "article_";
+const WEBHOOK_PATH = "/telegram/webhook";
 
 if (!token) {
   console.error("❌ BOT_TOKEN не знайдено в Environment Variables");
   process.exit(1);
 }
 
-http
-  .createServer((req, res) => {
-    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("HabitTeen bot v2 is running");
-  })
-  .listen(PORT, () => console.log(`🌐 Health server: ${PORT}`));
+const webhookSecret = createHash("sha256")
+  .update(`habitteen-webhook:${token}`)
+  .digest("hex");
 
-const bot = new TelegramBot(token, { polling: true });
-console.log("✅ HabitTeen bot v2 запущено");
-
-function isAdmin(chatId) {
-  return adminId && String(chatId) === String(adminId);
-}
+const bot = new TelegramBot(token, { polling: false });
+console.log("✅ HabitTeen bot v2 запущено у webhook-режимі");
 
 function telegramDescription(error) {
   return error?.response?.body?.description || error?.message || "невідома помилка";
+}
+
+function hasValidWebhookSecret(req) {
+  const received = String(req.headers["x-telegram-bot-api-secret-token"] || "");
+  const expected = webhookSecret;
+  const receivedBuffer = Buffer.from(received);
+  const expectedBuffer = Buffer.from(expected);
+
+  return (
+    receivedBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(receivedBuffer, expectedBuffer)
+  );
+}
+
+async function readJsonBody(req) {
+  let body = "";
+  for await (const chunk of req) {
+    body += chunk;
+    if (Buffer.byteLength(body, "utf8") > 1_000_000) {
+      throw new Error("Webhook payload is too large");
+    }
+  }
+  return JSON.parse(body || "{}");
+}
+
+const server = http.createServer(async (req, res) => {
+  if (req.method === "POST" && req.url === WEBHOOK_PATH) {
+    if (!hasValidWebhookSecret(req)) {
+      res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Forbidden");
+      return;
+    }
+
+    try {
+      const update = await readJsonBody(req);
+      bot.processUpdate(update);
+      res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("OK");
+    } catch (error) {
+      console.error("❌ webhook update:", telegramDescription(error));
+      res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Bad Request");
+    }
+    return;
+  }
+
+  if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("HabitTeen bot v2 is running");
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end("Not Found");
+});
+
+async function configureWebhook() {
+  const baseUrl = (process.env.WEBHOOK_BASE_URL || process.env.RENDER_EXTERNAL_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+
+  if (!baseUrl) {
+    console.warn("⚠️ WEBHOOK_BASE_URL/RENDER_EXTERNAL_URL не знайдено — webhook не зареєстровано");
+    return;
+  }
+
+  const webhookUrl = `${baseUrl}${WEBHOOK_PATH}`;
+  await bot.setWebHook(webhookUrl, {
+    secret_token: webhookSecret,
+    allowed_updates: ["message", "callback_query"]
+  });
+
+  const info = await bot.getWebHookInfo();
+  console.log(`✅ Telegram webhook активний: ${info.url || webhookUrl}`);
+  if (info.last_error_message) {
+    console.warn(`⚠️ Telegram webhook last error: ${info.last_error_message}`);
+  }
+}
+
+server.listen(PORT, async () => {
+  console.log(`🌐 Health/webhook server: ${PORT}`);
+  try {
+    await configureWebhook();
+  } catch (error) {
+    console.error("❌ setWebhook:", telegramDescription(error));
+  }
+});
+
+function isAdmin(chatId) {
+  return adminId && String(chatId) === String(adminId);
 }
 
 async function safeSend(chatId, text, options = {}) {
@@ -420,8 +505,10 @@ bot.on("message", async (msg) => {
   await showHome(msg.chat.id, user.menuMessageId || null);
 });
 
-bot.on("polling_error", (error) => {
-  console.error("❌ polling_error:", telegramDescription(error));
+process.on("SIGTERM", () => {
+  console.log("🛑 SIGTERM: завершуємо HTTP server без видалення Telegram webhook");
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 10_000).unref();
 });
 
 process.on("unhandledRejection", (error) => {
