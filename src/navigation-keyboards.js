@@ -10,6 +10,13 @@ function normalizePage(page, totalPages) {
   return Math.min(Math.max(requested, 0), Math.max(totalPages - 1, 0));
 }
 
+function cleanMenuLabel(text) {
+  return String(text || "")
+    .replace(/[✨⭐🌟]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function getLevelsPageMeta(blockKey, themeKey, page = 0) {
   const theme = getBlockSubtheme(blockKey, themeKey);
   const entries = Object.entries(theme?.levels || {});
@@ -48,7 +55,7 @@ export function mainMenuKeyboard(recommendation = null) {
   rows.push(
     ...getActiveBlocks().map((block) => [
       {
-        text: block.name,
+        text: cleanMenuLabel(block.name),
         callback_data: `block:${block.key}`
       }
     ])
@@ -62,7 +69,7 @@ export function subthemesKeyboard(blockKey) {
   const block = getBlock(blockKey);
   const rows = Object.entries(block?.subthemes || {}).map(([key, theme]) => [
     {
-      text: theme.name,
+      text: cleanMenuLabel(theme.name),
       callback_data: `theme:${blockKey}:${key}:0`
     }
   ]);
@@ -79,7 +86,7 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
   for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
     rows.push(
       pageEntries.slice(index, index + LEVEL_COLUMNS).map(([levelKey, level]) => ({
-        text: decorateLevelName(themeKey, levelKey, level.name),
+        text: cleanMenuLabel(decorateLevelName(themeKey, levelKey, level.name)),
         callback_data: `level:${blockKey}:${themeKey}:${levelKey}:${meta.page}`
       }))
     );
