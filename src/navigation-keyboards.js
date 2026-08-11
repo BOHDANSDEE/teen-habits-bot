@@ -40,16 +40,19 @@ export function getLevelPage(blockKey, themeKey, levelKey) {
   return index < 0 ? 0 : Math.floor(index / LEVELS_PER_PAGE);
 }
 
-export function mainMenuKeyboard(recommendation = null) {
+export function mainMenuKeyboard(blockHint = null) {
   const rows = [];
 
-  if (recommendation) {
+  if (blockHint?.blockKey && blockHint?.block) {
     rows.push([
       {
-        text: "🎲 Підказка",
-        callback_data: `recommend:${recommendation.blockKey}:${recommendation.themeKey}:${recommendation.levelKey}`
+        text: `💡 Спробувати: ${cleanMenuLabel(blockHint.block.name)}`,
+        callback_data: `block:${blockHint.blockKey}`
       }
     ]);
+    rows.push([{ text: "🎲 Інша підказка", callback_data: "hint:block" }]);
+  } else {
+    rows.push([{ text: "🎲 Підказка", callback_data: "hint:block" }]);
   }
 
   rows.push(
@@ -65,23 +68,57 @@ export function mainMenuKeyboard(recommendation = null) {
   return { inline_keyboard: rows };
 }
 
-export function subthemesKeyboard(blockKey) {
+export function subthemesKeyboard(blockKey, themeHint = null) {
   const block = getBlock(blockKey);
-  const rows = Object.entries(block?.subthemes || {}).map(([key, theme]) => [
-    {
-      text: cleanMenuLabel(theme.name),
-      callback_data: `theme:${blockKey}:${key}:0`
-    }
-  ]);
+  const rows = [];
+
+  if (themeHint?.themeKey && themeHint?.theme) {
+    rows.push([
+      {
+        text: `💡 Спробувати: ${cleanMenuLabel(themeHint.theme.name)}`,
+        callback_data: `theme:${blockKey}:${themeHint.themeKey}:0`
+      }
+    ]);
+    rows.push([{ text: "🎲 Інший підблок", callback_data: `hint:theme:${blockKey}` }]);
+  } else {
+    rows.push([{ text: "🎲 Підказка", callback_data: `hint:theme:${blockKey}` }]);
+  }
+
+  rows.push(
+    ...Object.entries(block?.subthemes || {}).map(([key, theme]) => [
+      {
+        text: cleanMenuLabel(theme.name),
+        callback_data: `theme:${blockKey}:${key}:0`
+      }
+    ])
+  );
 
   rows.push([{ text: "🏠 Головне меню", callback_data: "home" }]);
   return { inline_keyboard: rows };
 }
 
-export function levelsKeyboard(blockKey, themeKey, page = 0) {
+export function levelsKeyboard(blockKey, themeKey, page = 0, levelHint = null) {
   const meta = getLevelsPageMeta(blockKey, themeKey, page);
   const pageEntries = meta.entries.slice(meta.start, meta.end);
   const rows = [];
+
+  if (levelHint?.levelKey && levelHint?.level) {
+    rows.push([
+      {
+        text: `💡 Спробувати: ${cleanMenuLabel(
+          decorateLevelName(themeKey, levelHint.levelKey, levelHint.level.name)
+        )}`,
+        callback_data: `level:${blockKey}:${themeKey}:${levelHint.levelKey}:${meta.page}`
+      }
+    ]);
+    rows.push([
+      { text: "🎲 Інший рівень", callback_data: `hint:level:${blockKey}:${themeKey}` }
+    ]);
+  } else {
+    rows.push([
+      { text: "🎲 Підказка", callback_data: `hint:level:${blockKey}:${themeKey}` }
+    ]);
+  }
 
   for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
     rows.push(

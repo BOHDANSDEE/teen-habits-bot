@@ -62,13 +62,6 @@ function pickRandomEntry(entries = []) {
   return entries[Math.floor(Math.random() * entries.length)] || null;
 }
 
-function cleanHintLabel(text) {
-  return String(text || "")
-    .replace(/[✨⭐🌟]/gu, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
 function getRecommendableBlocks() {
   return getActiveBlocks()
     .map((block) => {
@@ -80,37 +73,61 @@ function getRecommendableBlocks() {
     .filter(Boolean);
 }
 
-// Підказка обирається ієрархічно, а не з плоского списку всіх рівнів:
-// 1) випадковий активний блок;
-// 2) випадковий підблок у ньому;
-// 3) випадковий рівень у підблоці.
-// Так великі блоки з десятками рівнів не витісняють маленькі нові напрями.
-export function getRandomRecommendation() {
-  const blockChoice = pickRandomEntry(getRecommendableBlocks());
-  if (!blockChoice) return null;
+// Підказка тепер працює поетапно. Кожен виклик обирає лише ОДИН наступний крок,
+// щоб людина бачила рекомендацію, але зберігала право обрати інший варіант.
+export function getRandomBlockHint() {
+  const choice = pickRandomEntry(getRecommendableBlocks());
+  if (!choice) return null;
+  return {
+    blockKey: choice.block.key,
+    block: choice.block
+  };
+}
 
-  const [themeKey, theme] = pickRandomEntry(blockChoice.themes) || [];
+export function getRandomThemeHint(blockKey) {
+  const block = getBlock(blockKey);
+  if (!block || block.enabled === false) return null;
+
+  const themes = Object.entries(block.subthemes || {}).filter(
+    ([, theme]) => Object.keys(theme?.levels || {}).length > 0
+  );
+  const [themeKey, theme] = pickRandomEntry(themes) || [];
   if (!themeKey || !theme) return null;
+
+  return {
+    blockKey: block.key,
+    block,
+    themeKey,
+    theme
+  };
+}
+
+export function getRandomLevelHint(blockKey, themeKey) {
+  const block = getBlock(blockKey);
+  const theme = getBlockSubtheme(blockKey, themeKey);
+  if (!block || !theme) return null;
 
   const [levelKey, level] = pickRandomEntry(Object.entries(theme.levels || {})) || [];
   if (!levelKey || !level) return null;
 
-  const block = blockChoice.block;
-
   return {
     blockKey: block.key,
-    block: {
-      ...block,
-      name: `💡 Підказка\n🧩 Блок: ${cleanHintLabel(block.name)}`
-    },
+    block,
     themeKey,
-    theme: {
-      ...theme,
-      name: `📂 Підблок: ${cleanHintLabel(theme.name)}`
-    },
+    theme,
     levelKey,
     level
   };
+}
+
+// Залишаємо стару функцію як сумісний utility, але інтерфейс бота більше
+// не використовує її для стрибка одразу у фінальний результат.
+export function getRandomRecommendation() {
+  const blockHint = getRandomBlockHint();
+  if (!blockHint) return null;
+  const themeHint = getRandomThemeHint(blockHint.blockKey);
+  if (!themeHint) return null;
+  return getRandomLevelHint(blockHint.blockKey, themeHint.themeKey);
 }
 
 export function findLevelByArticleSlug(articleSlug) {
