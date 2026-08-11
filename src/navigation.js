@@ -57,10 +57,53 @@ export function getAllLevelTargets() {
   return targets;
 }
 
+function pickRandomEntry(entries = []) {
+  if (!entries.length) return null;
+  return entries[Math.floor(Math.random() * entries.length)] || null;
+}
+
+function getRecommendableBlocks() {
+  return getActiveBlocks()
+    .map((block) => {
+      const themes = Object.entries(block.subthemes || {}).filter(
+        ([, theme]) => Object.keys(theme?.levels || {}).length > 0
+      );
+      return themes.length ? { block, themes } : null;
+    })
+    .filter(Boolean);
+}
+
+// Підказка обирається ієрархічно, а не з плоского списку всіх рівнів:
+// 1) випадковий активний блок;
+// 2) випадковий підблок у ньому;
+// 3) випадковий рівень у підблоці.
+// Так великі блоки з десятками рівнів не витісняють маленькі нові напрями.
 export function getRandomRecommendation() {
-  const targets = getAllLevelTargets();
-  if (!targets.length) return null;
-  return targets[Math.floor(Math.random() * targets.length)];
+  const blockChoice = pickRandomEntry(getRecommendableBlocks());
+  if (!blockChoice) return null;
+
+  const [themeKey, theme] = pickRandomEntry(blockChoice.themes) || [];
+  if (!themeKey || !theme) return null;
+
+  const [levelKey, level] = pickRandomEntry(Object.entries(theme.levels || {})) || [];
+  if (!levelKey || !level) return null;
+
+  const block = blockChoice.block;
+
+  return {
+    blockKey: block.key,
+    block: {
+      ...block,
+      name: `💡 Підказка\n🧩 Блок: ${block.name}`
+    },
+    themeKey,
+    theme: {
+      ...theme,
+      name: `📂 Підблок: ${theme.name}`
+    },
+    levelKey,
+    level
+  };
 }
 
 export function findLevelByArticleSlug(articleSlug) {
