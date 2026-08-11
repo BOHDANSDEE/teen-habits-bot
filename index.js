@@ -13,8 +13,10 @@ import {
   levelsKeyboard,
   mainMenuKeyboard,
   resultKeyboard,
+  starterResultKeyboard,
   subthemesKeyboard
 } from "./src/navigation-keyboards.js";
+import { buildGenericResult } from "./src/generic-result.js";
 import { buildContinuation, buildResult } from "./src/renderer.js";
 import { getStats, getUser, registerEvent, updateUser } from "./src/storage.js";
 
@@ -84,7 +86,7 @@ async function renderNavigation(chatId, messageId, text, options = {}) {
 function recommendationText(recommendation) {
   if (!recommendation) return "";
 
-  return `\n\n🎲✨ Вам рекомендується зараз:\n${recommendation.theme.name}\n🎯 ${recommendation.level.name}\n📖 ${recommendation.level.articleTitle}\n\nНатисни «Відкрити рекомендований рівень» — бот одразу покаже розбір і практичні кроки.`;
+  return `\n\n🎲✨ Вам рекомендується зараз:\n${recommendation.block.name}\n${recommendation.theme.name}\n🎯 ${recommendation.level.name}\n📖 Тема: ${recommendation.level.articleTitle}\n\nНатисни «Відкрити рекомендований рівень» — бот одразу покаже розбір і практичні кроки.`;
 }
 
 async function showHome(chatId, messageId = null) {
@@ -101,7 +103,7 @@ async function showHome(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     targetMessageId,
-    `👋✨ HabitTeen${recommendationText(recommendation)}\n\n🧭 Або обери блок самостійно. Усередині будуть підблоки, а далі — конкретні рівні.\n\n🔄 Меню працює в одному повідомленні: натискаєш кнопку — ця ж сторінка змінюється, тому старі кнопки не накопичуються в чаті.`,
+    `👋✨ HabitTeen${recommendationText(recommendation)}\n\n🧭 Або обери блок самостійно. Тепер тут є не лише «Стан, енергія та дія», а й стартові напрями про здоров’я, розвиток, навчання, стосунки та порядок у житті.\n\n🔄 Меню працює в одному повідомленні: натискаєш кнопку — ця ж сторінка змінюється, тому старі кнопки не накопичуються в чаті.`,
     { reply_markup: mainMenuKeyboard(recommendation) }
   );
 }
@@ -110,7 +112,7 @@ async function showAbout(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     messageId,
-    `ℹ️🧭 Як це працює\n\n1️⃣ У головному меню бот випадково рекомендує один рівень із доступних тем.\n2️⃣ Можна відкрити рекомендацію одразу або самостійно обрати великий блок і підблок.\n3️⃣ Рівні показуються сторінками по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n4️⃣ Один рівень відповідає окремій темі статті HabitTeen.\n5️⃣ Якщо перейти з кнопки всередині статті, бот одразу відкриє саме її рівень — повторно шукати тему не потрібно.\n6️⃣ Після вибору отримуєш розгорнутий розбір: стан, проблему, вторинну вигоду, значення в житті, 3 практичні кроки та афірмацію.\n7️⃣ З результату можна повернутися до рівнів, до блоку або одразу в головне меню.\n\n🧩 Архітектура вже готова для майбутніх блоків інших напрямів. Поки їхні теми не визначені, порожні кнопки користувачам не показуються.`,
+    `ℹ️🧭 Як це працює\n\n1️⃣ У головному меню бот випадково рекомендує один рівень із усіх активних напрямів.\n2️⃣ Можна відкрити рекомендацію одразу або самостійно обрати великий блок і підблок.\n3️⃣ Повний HabitTeen-блок має 45 рівнів, а нові тематичні блоки поки мають по одному стартовому рівню на підблок.\n4️⃣ Коли для нового напряму з’явиться окремий сайт, його статті можна зв’язати з цими рівнями тим самим deep-link механізмом.\n5️⃣ Рівні показуються сторінками максимум по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n6️⃣ Після вибору отримуєш розбір: стан, проблему, вторинну вигоду, значення в житті, 3 практичні кроки та афірмацію.\n7️⃣ З результату можна повернутися до рівнів, до блоку або одразу в головне меню.`,
     { reply_markup: mainMenuKeyboard(getRandomRecommendation()) }
   );
 }
@@ -168,12 +170,11 @@ async function sendResult(
   source = "level",
   messageId = null
 ) {
-  if (blockKey !== PRIMARY_BLOCK_KEY) {
-    await showBlock(chatId, blockKey, messageId);
-    return;
-  }
+  const result =
+    blockKey === PRIMARY_BLOCK_KEY
+      ? buildResult(themeKey, levelKey)
+      : buildGenericResult(blockKey, themeKey, levelKey);
 
-  const result = buildResult(themeKey, levelKey);
   if (!result) {
     await showTheme(chatId, blockKey, themeKey, page, messageId);
     return;
@@ -189,9 +190,14 @@ async function sendResult(
   });
   registerEvent("result", chatId, { blockKey, themeKey, levelKey, page, source });
 
+  const replyMarkup =
+    blockKey === PRIMARY_BLOCK_KEY
+      ? resultKeyboard(blockKey, themeKey, levelKey, page)
+      : starterResultKeyboard(blockKey, themeKey, page);
+
   await renderNavigation(chatId, messageId, result.text, {
     parse_mode: "Markdown",
-    reply_markup: resultKeyboard(blockKey, themeKey, levelKey, page)
+    reply_markup: replyMarkup
   });
 }
 
