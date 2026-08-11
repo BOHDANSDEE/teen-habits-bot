@@ -214,6 +214,36 @@ async function safeSend(chatId, text, options = {}) {
   }
 }
 
+async function retireActiveMenu(chatId) {
+  const user = getUser(chatId);
+  const previousMenuMessageId = user.menuMessageId || null;
+
+  updateUser(chatId, { menuMessageId: null });
+
+  if (!previousMenuMessageId) return null;
+
+  try {
+    await bot.editMessageReplyMarkup(
+      { inline_keyboard: [] },
+      {
+        chat_id: chatId,
+        message_id: previousMenuMessageId
+      }
+    );
+  } catch (error) {
+    const description = telegramDescription(error);
+    if (
+      !/message is not modified|message to edit not found|message can't be edited/i.test(
+        description
+      )
+    ) {
+      console.warn("⚠️ retireActiveMenu:", description);
+    }
+  }
+
+  return previousMenuMessageId;
+}
+
 async function renderNavigation(chatId, messageId, text, options = {}) {
   if (messageId) {
     try {
@@ -399,13 +429,14 @@ bot.onText(/\/start(?:\s+([A-Za-z0-9_-]+))?$/, async (msg, match) => {
     payload: payload || null
   });
 
+  const retirePromise = retireActiveMenu(msg.chat.id);
+
   if (payload.startsWith(ARTICLE_START_PREFIX)) {
     const articleSlug = payload.slice(ARTICLE_START_PREFIX.length);
     const target = findLevelByArticleSlug(articleSlug);
 
     if (target) {
       const page = getLevelPage(target.blockKey, target.themeKey, target.levelKey);
-      const user = getUser(msg.chat.id);
       await sendResult(
         msg.chat.id,
         target.blockKey,
@@ -413,13 +444,15 @@ bot.onText(/\/start(?:\s+([A-Za-z0-9_-]+))?$/, async (msg, match) => {
         target.levelKey,
         page,
         "article-deeplink",
-        user.menuMessageId || null
+        null
       );
+      await retirePromise;
       return;
     }
   }
 
-  await showHome(msg.chat.id);
+  await showHome(msg.chat.id, null);
+  await retirePromise;
 });
 
 bot.onText(/\/stats$/, async (msg) => {
