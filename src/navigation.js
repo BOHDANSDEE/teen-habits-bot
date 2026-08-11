@@ -62,6 +62,13 @@ function pickRandomEntry(entries = []) {
   return entries[Math.floor(Math.random() * entries.length)] || null;
 }
 
+function cleanHintLabel(text) {
+  return String(text || "")
+    .replace(/[✨⭐🌟]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function getRecommendableBlocks() {
   return getActiveBlocks()
     .map((block) => {
@@ -94,12 +101,12 @@ export function getRandomRecommendation() {
     blockKey: block.key,
     block: {
       ...block,
-      name: `💡 Підказка\n🧩 Блок: ${block.name}`
+      name: `💡 Підказка\n🧩 Блок: ${cleanHintLabel(block.name)}`
     },
     themeKey,
     theme: {
       ...theme,
-      name: `📂 Підблок: ${theme.name}`
+      name: `📂 Підблок: ${cleanHintLabel(theme.name)}`
     },
     levelKey,
     level
