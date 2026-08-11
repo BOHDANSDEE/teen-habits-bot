@@ -6,7 +6,9 @@ import {
   findLevelByArticleSlug,
   getBlock,
   getBlockSubtheme,
-  getRandomRecommendation
+  getRandomBlockHint,
+  getRandomLevelHint,
+  getRandomThemeHint
 } from "./src/navigation.js";
 import {
   getLevelPage,
@@ -269,16 +271,46 @@ async function renderNavigation(chatId, messageId, text, options = {}) {
   return sent;
 }
 
-function recommendationText(recommendation) {
-  if (!recommendation) return "";
-
-  return `\n\n🎲✨ Вам рекомендується зараз:\n${recommendation.block.name}\n${recommendation.theme.name}\n🎯 ${recommendation.level.name}\n📖 Тема: ${recommendation.level.articleTitle}\n\nНатисни «Відкрити рекомендований рівень» — бот одразу покаже розбір і практичні кроки.`;
+function cleanConversationLabel(text) {
+  return String(text || "")
+    .replace(/[✨⭐🌟]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
-async function showHome(chatId, messageId = null) {
+function blockHintText(blockHint) {
+  if (!blockHint?.block) {
+    return "🎲 Якщо тобі складно визначитися, натисни «Підказка». Я запропоную лише один напрям для наступного кроку — не фінальну відповідь.";
+  }
+
+  return `💡 Я б зараз запропонував тобі почати з цього напряму:\n🧩 ${cleanConversationLabel(
+    blockHint.block.name
+  )}\n\nВідгукується? Можеш спробувати цей блок, попросити іншу підказку або обрати будь-який інший напрям самостійно.`;
+}
+
+function themeHintText(themeHint) {
+  if (!themeHint?.theme) {
+    return "🎲 Якщо важко зрозуміти, який підблок ближчий саме зараз, натисни «Підказка». Я запропоную один варіант, а вибір залишиться за тобою.";
+  }
+
+  return `💡 Із цього блоку я б запропонував тобі придивитися до:\n📂 ${cleanConversationLabel(
+    themeHint.theme.name
+  )}\n\nСхоже на те, що ти зараз відчуваєш? Якщо ні — обери інший підблок або попроси ще одну підказку.`;
+}
+
+function levelHintText(levelHint) {
+  if (!levelHint?.level) {
+    return "🎲 Якщо серед рівнів важко впізнати свою ситуацію, натисни «Підказка». Я виберу один рівень для перевірки, але не відкриватиму розбір без твого рішення.";
+  }
+
+  return `💡 Серед цих ситуацій я б запропонував тобі перевірити:\n🎯 ${cleanConversationLabel(
+    levelHint.level.name
+  )}\n📖 ${levelHint.level.articleTitle}\n\nЦе схоже на твою ситуацію? Натисни цей рівень, якщо так. Якщо ні — обери інший або попроси нову підказку.`;
+}
+
+async function showHome(chatId, messageId = null, blockHint = null) {
   const user = getUser(chatId);
   const targetMessageId = messageId || user.menuMessageId || null;
-  const recommendation = getRandomRecommendation();
 
   updateUser(chatId, {
     currentBlockKey: null,
@@ -289,8 +321,10 @@ async function showHome(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     targetMessageId,
-    `👋✨ HabitTeen${recommendationText(recommendation)}\n\n🧭 Або обери блок самостійно. Тепер тут є не лише «Стан, енергія та дія», а й стартові напрями про здоров’я, розвиток, навчання, стосунки та порядок у житті.\n\n🔄 Меню працює в одному повідомленні: натискаєш кнопку — ця ж сторінка змінюється, тому старі кнопки не накопичуються в чаті.`,
-    { reply_markup: mainMenuKeyboard(recommendation) }
+    `👋 HabitTeen\n\n💬 Що ти зараз відчуваєш? Не намагайся одразу знайти ідеальну назву. Подивись на напрями нижче й відміть, що найбільше відгукується саме сьогодні.\n\n${blockHintText(
+      blockHint
+    )}`,
+    { reply_markup: mainMenuKeyboard(blockHint) }
   );
 }
 
@@ -298,12 +332,12 @@ async function showAbout(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     messageId,
-    `ℹ️🧭 Як це працює\n\n1️⃣ У головному меню бот випадково рекомендує один рівень із усіх активних напрямів.\n2️⃣ Можна відкрити рекомендацію одразу або самостійно обрати великий блок і підблок.\n3️⃣ Повний HabitTeen-блок має 45 рівнів, а нові тематичні блоки поки мають по одному стартовому рівню на підблок.\n4️⃣ Коли для нового напряму з’явиться окремий сайт, його статті можна зв’язати з цими рівнями тим самим deep-link механізмом.\n5️⃣ Рівні показуються сторінками максимум по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n6️⃣ Після вибору отримуєш розбір: стан, проблему, вторинну вигоду, значення в житті, 3 практичні кроки та афірмацію.\n7️⃣ З результату можна повернутися до рівнів, до блоку або одразу в головне меню.`,
-    { reply_markup: mainMenuKeyboard(getRandomRecommendation()) }
+    `ℹ️ Як це працює\n\nМи не кидаємо тебе одразу у випадковий фінальний результат. Підказка веде поступово, як у короткій розмові.\n\n1️⃣ У головному меню «Підказка» пропонує один випадковий блок. Ти можеш прийняти його або обрати інший.\n2️⃣ Усередині блока «Підказка» пропонує один підблок. Вибір знову залишається за тобою.\n3️⃣ Усередині підблока «Підказка» пропонує один рівень. Тільки ти вирішуєш, відкривати його чи ні.\n4️⃣ Після вибору рівня отримуєш розбір: стан, проблему, вторинну вигоду, значення в житті, 3 практичні кроки та афірмацію.\n5️⃣ Рівні показуються сторінками максимум по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n6️⃣ Перехід зі статті залишається прямим: якщо ти вже прочитав конкретну тему, бот одразу відкриває відповідний рівень.`,
+    { reply_markup: mainMenuKeyboard() }
   );
 }
 
-async function showBlock(chatId, blockKey, messageId = null) {
+async function showBlock(chatId, blockKey, messageId = null, themeHint = null) {
   const block = getBlock(blockKey);
   if (!block || block.enabled === false) {
     await showHome(chatId, messageId);
@@ -319,12 +353,21 @@ async function showBlock(chatId, blockKey, messageId = null) {
   await renderNavigation(
     chatId,
     messageId,
-    `${block.name}\n\n${block.description}\n\n🧩 Обери підблок, який зараз найближчий до твоєї ситуації.`,
-    { reply_markup: subthemesKeyboard(blockKey) }
+    `${block.name}\n\n${block.description}\n\n💬 Ти вже обрав напрям. Що тут найбільше схоже на те, що відбувається з тобою зараз?\n\n${themeHintText(
+      themeHint
+    )}`,
+    { reply_markup: subthemesKeyboard(blockKey, themeHint) }
   );
 }
 
-async function showTheme(chatId, blockKey, themeKey, page = 0, messageId = null) {
+async function showTheme(
+  chatId,
+  blockKey,
+  themeKey,
+  page = 0,
+  messageId = null,
+  levelHint = null
+) {
   const theme = getBlockSubtheme(blockKey, themeKey);
   if (!theme) {
     await showBlock(chatId, blockKey, messageId);
@@ -342,8 +385,10 @@ async function showTheme(chatId, blockKey, themeKey, page = 0, messageId = null)
   await renderNavigation(
     chatId,
     messageId,
-    `${theme.name}\n\n${theme.description}\n\n📚 Обери рівень. Усього ${meta.totalItems}; на одній сторінці показуємо максимум 8.\n📄 Сторінка ${meta.page + 1}/${meta.totalPages}.`,
-    { reply_markup: levelsKeyboard(blockKey, themeKey, meta.page) }
+    `${theme.name}\n\n${theme.description}\n\n💬 Ти вже звузив тему. Тепер подивись на конкретні ситуації: яка з них найбільше схожа на те, що ти переживаєш або робиш останнім часом?\n\n${levelHintText(
+      levelHint
+    )}\n\n📄 Сторінка ${meta.page + 1}/${meta.totalPages}.`,
+    { reply_markup: levelsKeyboard(blockKey, themeKey, meta.page, levelHint) }
   );
 }
 
@@ -492,17 +537,36 @@ bot.on("callback_query", async (query) => {
     return;
   }
 
+  if (data === "hint:block") {
+    await showHome(chatId, messageId, getRandomBlockHint());
+    return;
+  }
+
+  if (data.startsWith("hint:theme:")) {
+    const [, , blockKey] = data.split(":");
+    await showBlock(chatId, blockKey, messageId, getRandomThemeHint(blockKey));
+    return;
+  }
+
+  if (data.startsWith("hint:level:")) {
+    const [, , blockKey, themeKey] = data.split(":");
+    const levelHint = getRandomLevelHint(blockKey, themeKey);
+    const page = levelHint
+      ? getLevelPage(blockKey, themeKey, levelHint.levelKey)
+      : getUser(chatId).currentLevelPage || 0;
+    await showTheme(chatId, blockKey, themeKey, page, messageId, levelHint);
+    return;
+  }
+
+  // Сумісність зі старими повідомленнями PR #11: старий recommend більше не відкриває
+  // фінальний результат, а повертає людину до першого кроку підказки — вибору блока.
   if (data.startsWith("recommend:")) {
-    const [, blockKey, themeKey, levelKey] = data.split(":");
-    const page = getLevelPage(blockKey, themeKey, levelKey);
-    await sendResult(
+    const [, blockKey] = data.split(":");
+    const block = getBlock(blockKey);
+    await showHome(
       chatId,
-      blockKey,
-      themeKey,
-      levelKey,
-      page,
-      "menu-recommendation",
-      messageId
+      messageId,
+      block ? { blockKey: block.key, block } : getRandomBlockHint()
     );
     return;
   }
