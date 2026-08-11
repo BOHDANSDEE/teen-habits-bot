@@ -33,11 +33,26 @@ export function getLevelPage(blockKey, themeKey, levelKey) {
   return index < 0 ? 0 : Math.floor(index / LEVELS_PER_PAGE);
 }
 
-export function mainMenuKeyboard() {
-  const rows = getActiveBlocks().map((block) => [{
-    text: `✨ ${block.name} ✨`,
-    callback_data: `block:${block.key}`
-  }]);
+export function mainMenuKeyboard(recommendation = null) {
+  const rows = [];
+
+  if (recommendation) {
+    rows.push([
+      {
+        text: "🎲✨ Відкрити рекомендований рівень",
+        callback_data: `recommend:${recommendation.blockKey}:${recommendation.themeKey}:${recommendation.levelKey}`
+      }
+    ]);
+  }
+
+  rows.push(
+    ...getActiveBlocks().map((block) => [
+      {
+        text: `✨ ${block.name} ✨`,
+        callback_data: `block:${block.key}`
+      }
+    ])
+  );
 
   rows.push([{ text: "ℹ️🧭 Як це працює", callback_data: "about" }]);
   return { inline_keyboard: rows };
@@ -45,10 +60,12 @@ export function mainMenuKeyboard() {
 
 export function subthemesKeyboard(blockKey) {
   const block = getBlock(blockKey);
-  const rows = Object.entries(block?.subthemes || {}).map(([key, theme]) => [{
-    text: `✨ ${theme.name}`,
-    callback_data: `theme:${blockKey}:${key}:0`
-  }]);
+  const rows = Object.entries(block?.subthemes || {}).map(([key, theme]) => [
+    {
+      text: `✨ ${theme.name}`,
+      callback_data: `theme:${blockKey}:${key}:0`
+    }
+  ]);
 
   rows.push([{ text: "🏠✨ Головне меню", callback_data: "home" }]);
   return { inline_keyboard: rows };
@@ -71,9 +88,19 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
 
   if (meta.totalPages > 1) {
     const pagination = [];
-    if (meta.page > 0) pagination.push({ text: "⬅️", callback_data: `levels:${blockKey}:${themeKey}:${meta.page - 1}` });
+    if (meta.page > 0) {
+      pagination.push({
+        text: "⬅️",
+        callback_data: `levels:${blockKey}:${themeKey}:${meta.page - 1}`
+      });
+    }
     pagination.push({ text: `📄 ${meta.page + 1}/${meta.totalPages}`, callback_data: "noop" });
-    if (meta.page < meta.totalPages - 1) pagination.push({ text: "➡️", callback_data: `levels:${blockKey}:${themeKey}:${meta.page + 1}` });
+    if (meta.page < meta.totalPages - 1) {
+      pagination.push({
+        text: "➡️",
+        callback_data: `levels:${blockKey}:${themeKey}:${meta.page + 1}`
+      });
+    }
     rows.push(pagination);
   }
 
@@ -86,7 +113,12 @@ export function resultKeyboard(blockKey, themeKey, levelKey, page = 0) {
   return {
     inline_keyboard: [
       [{ text: "💡✨ Хочу ще рішення", callback_data: `solution:${blockKey}:${themeKey}` }],
-      [{ text: "🎲🔄 Інший варіант", callback_data: `reroll:${blockKey}:${themeKey}:${levelKey}:${page}` }],
+      [
+        {
+          text: "🎲🔄 Інший варіант",
+          callback_data: `reroll:${blockKey}:${themeKey}:${levelKey}:${page}`
+        }
+      ],
       [{ text: "⬅️📚 До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
       [{ text: "⬅️🧩 До блоку", callback_data: `block:${blockKey}` }],
       [{ text: "🏠✨ Головне меню", callback_data: "home" }]
