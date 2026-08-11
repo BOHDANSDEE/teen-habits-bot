@@ -1,7 +1,12 @@
 import TelegramBot from "node-telegram-bot-api";
 import "dotenv/config";
 import http from "http";
-import { getBlock, getBlockSubtheme } from "./src/navigation.js";
+import {
+  findLevelByArticleSlug,
+  getBlock,
+  getBlockSubtheme,
+  getRandomRecommendation
+} from "./src/navigation.js";
 import {
   getLevelPage,
   getLevelsPageMeta,
@@ -17,6 +22,7 @@ const token = process.env.BOT_TOKEN;
 const adminId = process.env.ADMIN_ID;
 const PORT = process.env.PORT || 10000;
 const PRIMARY_BLOCK_KEY = "state_action";
+const ARTICLE_START_PREFIX = "article_";
 
 if (!token) {
   console.error("❌ BOT_TOKEN не знайдено в Environment Variables");
@@ -75,9 +81,16 @@ async function renderNavigation(chatId, messageId, text, options = {}) {
   return sent;
 }
 
+function recommendationText(recommendation) {
+  if (!recommendation) return "";
+
+  return `\n\n🎲✨ Вам рекомендується зараз:\n${recommendation.theme.name}\n🎯 ${recommendation.level.name}\n📖 ${recommendation.level.articleTitle}\n\nНатисни «Відкрити рекомендований рівень» — бот одразу покаже розбір і практичні кроки.`;
+}
+
 async function showHome(chatId, messageId = null) {
   const user = getUser(chatId);
   const targetMessageId = messageId || user.menuMessageId || null;
+  const recommendation = getRandomRecommendation();
 
   updateUser(chatId, {
     currentBlockKey: null,
@@ -88,8 +101,8 @@ async function showHome(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     targetMessageId,
-    `👋✨ HabitTeen\n\n🧭 Обери блок, з яким хочеш працювати. Усередині будуть підблоки, а далі — конкретні рівні.\n\n🔄 Меню працює в одному повідомленні: натискаєш кнопку — ця ж сторінка змінюється, тому старі кнопки не накопичуються в чаті.`,
-    { reply_markup: mainMenuKeyboard() }
+    `👋✨ HabitTeen${recommendationText(recommendation)}\n\n🧭 Або обери блок самостійно. Усередині будуть підблоки, а далі — конкретні рівні.\n\n🔄 Меню працює в одному повідомленні: натискаєш кнопку — ця ж сторінка змінюється, тому старі кнопки не накопичуються в чаті.`,
+    { reply_markup: mainMenuKeyboard(recommendation) }
   );
 }
 
@@ -97,8 +110,8 @@ async function showAbout(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     messageId,
-    `ℹ️🧭 Як це працює\n\n1️⃣ Обираєш великий блок.\n2️⃣ Усередині обираєш підблок.\n3️⃣ Рівні показуються сторінками по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n4️⃣ Один рівень відповідає окремій темі статті HabitTeen.\n5️⃣ Після вибору отримуєш розгорнутий розбір: стан, проблему, вторинну вигоду, значення в житті, 3 практичні кроки та афірмацію.\n6️⃣ З результату можна повернутися до рівнів, до блоку або одразу в головне меню.\n\n🧩 Архітектура вже готова для майбутніх блоків інших напрямів. Поки їхні теми не визначені, порожні кнопки користувачам не показуються.`,
-    { reply_markup: mainMenuKeyboard() }
+    `ℹ️🧭 Як це працює\n\n1️⃣ У головному меню бот випадково рекомендує один рівень із доступних тем.\n2️⃣ Можна відкрити рекомендацію одразу або самостійно обрати великий блок і підблок.\n3️⃣ Рівні показуються сторінками по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n4️⃣ Один рівень відповідає окремій темі статті HabitTeen.\n5️⃣ Якщо перейти з кнопки всередині статті, бот одразу відкриє саме її рівень — повторно шукати тему не потрібно.\n6️⃣ Після вибору отримуєш розгорнутий розбір: стан, проблему, вторинну вигоду, значення в житті, 3 практичні кроки та афірмацію.\n7️⃣ З результату можна повернутися до рівнів, до блоку або одразу в головне меню.\n\n🧩 Архітектура вже готова для майбутніх блоків інших напрямів. Поки їхні теми не визначені, порожні кнопки користувачам не показуються.`,
+    { reply_markup: mainMenuKeyboard(getRandomRecommendation()) }
   );
 }
 
@@ -146,7 +159,15 @@ async function showTheme(chatId, blockKey, themeKey, page = 0, messageId = null)
   );
 }
 
-async function sendResult(chatId, blockKey, themeKey, levelKey, page = 0, source = "level", messageId = null) {
+async function sendResult(
+  chatId,
+  blockKey,
+  themeKey,
+  levelKey,
+  page = 0,
+  source = "level",
+  messageId = null
+) {
   if (blockKey !== PRIMARY_BLOCK_KEY) {
     await showBlock(chatId, blockKey, messageId);
     return;
@@ -209,8 +230,33 @@ async function sendContinuation(chatId, blockKey, previousThemeKey, messageId = 
   });
 }
 
-bot.onText(/\/start(?:\s+.*)?$/, async (msg) => {
-  registerEvent("start", msg.chat.id, { username: msg.from?.username || null });
+bot.onText(/\/start(?:\s+([A-Za-z0-9_-]+))?$/, async (msg, match) => {
+  const payload = match?.[1] || "";
+  registerEvent("start", msg.chat.id, {
+    username: msg.from?.username || null,
+    payload: payload || null
+  });
+
+  if (payload.startsWith(ARTICLE_START_PREFIX)) {
+    const articleSlug = payload.slice(ARTICLE_START_PREFIX.length);
+    const target = findLevelByArticleSlug(articleSlug);
+
+    if (target) {
+      const page = getLevelPage(target.blockKey, target.themeKey, target.levelKey);
+      const user = getUser(msg.chat.id);
+      await sendResult(
+        msg.chat.id,
+        target.blockKey,
+        target.themeKey,
+        target.levelKey,
+        page,
+        "article-deeplink",
+        user.menuMessageId || null
+      );
+      return;
+    }
+  }
+
   await showHome(msg.chat.id);
 });
 
@@ -251,6 +297,21 @@ bot.on("callback_query", async (query) => {
     return;
   }
 
+  if (data.startsWith("recommend:")) {
+    const [, blockKey, themeKey, levelKey] = data.split(":");
+    const page = getLevelPage(blockKey, themeKey, levelKey);
+    await sendResult(
+      chatId,
+      blockKey,
+      themeKey,
+      levelKey,
+      page,
+      "menu-recommendation",
+      messageId
+    );
+    return;
+  }
+
   if (data.startsWith("block:")) {
     const [, blockKey] = data.split(":");
     await showBlock(chatId, blockKey, messageId);
@@ -276,11 +337,27 @@ bot.on("callback_query", async (query) => {
     const parts = data.split(":");
     if (parts.length >= 5) {
       const [, blockKey, themeKey, levelKey, page] = parts;
-      await sendResult(chatId, blockKey, themeKey, levelKey, Number(page) || 0, "level", messageId);
+      await sendResult(
+        chatId,
+        blockKey,
+        themeKey,
+        levelKey,
+        Number(page) || 0,
+        "level",
+        messageId
+      );
     } else {
       const [, themeKey, levelKey] = parts;
       const page = getLevelPage(PRIMARY_BLOCK_KEY, themeKey, levelKey);
-      await sendResult(chatId, PRIMARY_BLOCK_KEY, themeKey, levelKey, page, "legacy-level", messageId);
+      await sendResult(
+        chatId,
+        PRIMARY_BLOCK_KEY,
+        themeKey,
+        levelKey,
+        page,
+        "legacy-level",
+        messageId
+      );
     }
     return;
   }
@@ -289,19 +366,39 @@ bot.on("callback_query", async (query) => {
     const parts = data.split(":");
     if (parts.length >= 5) {
       const [, blockKey, themeKey, levelKey, page] = parts;
-      await sendResult(chatId, blockKey, themeKey, levelKey, Number(page) || 0, "reroll", messageId);
+      await sendResult(
+        chatId,
+        blockKey,
+        themeKey,
+        levelKey,
+        Number(page) || 0,
+        "reroll",
+        messageId
+      );
     } else {
       const [, themeKey, levelKey] = parts;
       const page = getLevelPage(PRIMARY_BLOCK_KEY, themeKey, levelKey);
-      await sendResult(chatId, PRIMARY_BLOCK_KEY, themeKey, levelKey, page, "legacy-reroll", messageId);
+      await sendResult(
+        chatId,
+        PRIMARY_BLOCK_KEY,
+        themeKey,
+        levelKey,
+        page,
+        "legacy-reroll",
+        messageId
+      );
     }
     return;
   }
 
   if (data.startsWith("solution:")) {
     const parts = data.split(":");
-    const blockKey = parts.length >= 3 && getBlock(parts[1]) ? parts[1] : PRIMARY_BLOCK_KEY;
-    const themeKey = blockKey === PRIMARY_BLOCK_KEY && parts[1] !== PRIMARY_BLOCK_KEY ? parts[1] : parts[2];
+    const blockKey =
+      parts.length >= 3 && getBlock(parts[1]) ? parts[1] : PRIMARY_BLOCK_KEY;
+    const themeKey =
+      blockKey === PRIMARY_BLOCK_KEY && parts[1] !== PRIMARY_BLOCK_KEY
+        ? parts[1]
+        : parts[2];
     await sendContinuation(chatId, blockKey, themeKey, messageId);
     return;
   }
