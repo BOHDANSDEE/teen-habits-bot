@@ -17,7 +17,15 @@ assert.match(source, /bot\.processUpdate\(/, "HTTP webhook must pass updates to 
 assert.match(source, /RENDER_EXTERNAL_URL/, "webhook URL must use Render external URL");
 assert.match(source, /X-Telegram-Bot-Api-Secret-Token/i, "webhook requests must verify Telegram secret header");
 assert.match(source, /webhookSecret\.slice\(0, 24\)/, "webhook route must change if bot token changes");
+assert.match(source, /async function retireActiveMenu\(chatId\)/, "/start must retire the previously active menu");
+assert.match(source, /bot\.editMessageReplyMarkup\(\s*\{ inline_keyboard: \[\] \}/s, "old inline keyboard must be removed");
+assert.match(source, /updateUser\(chatId, \{ menuMessageId: null \}\)/, "stored old menu id must be cleared before fresh start");
+assert.match(source, /const retirePromise = retireActiveMenu\(msg\.chat\.id\);/, "/start must begin retiring the old menu before rendering the new one");
+assert.match(source, /"article-deeplink",\s*null\s*\)/s, "article deep-link must open as a fresh message at the bottom");
+assert.match(source, /await showHome\(msg\.chat\.id, null\);/, "manual /start must open a fresh menu message");
+assert.match(source, /await retirePromise;/, "old menu cleanup must complete after fresh rendering starts");
+assert.doesNotMatch(source, /"article-deeplink",\s*user\.menuMessageId/s, "article deep-link must not edit a stale menu message");
 assert.doesNotMatch(source, /bot\.on\(["']polling_error["']/, "polling error listener should be removed");
 assert.doesNotMatch(source, /polling:\s*true/, "long polling must not be enabled");
 
-console.log("✅ HabitTeen webhook test passed: idempotent Render startup, retries and protected webhook enabled");
+console.log("✅ HabitTeen webhook/start test passed: stable webhook + fresh /start menu behavior enabled");
