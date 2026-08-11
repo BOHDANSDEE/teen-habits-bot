@@ -10,6 +10,13 @@ function normalizePage(page, totalPages) {
   return Math.min(Math.max(requested, 0), Math.max(totalPages - 1, 0));
 }
 
+function cleanMenuLabel(text) {
+  return String(text || "")
+    .replace(/[✨⭐🌟]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function getLevelsPageMeta(blockKey, themeKey, page = 0) {
   const theme = getBlockSubtheme(blockKey, themeKey);
   const entries = Object.entries(theme?.levels || {});
@@ -39,7 +46,7 @@ export function mainMenuKeyboard(recommendation = null) {
   if (recommendation) {
     rows.push([
       {
-        text: "🎲✨ Відкрити рекомендований рівень",
+        text: "🎲 Підказка",
         callback_data: `recommend:${recommendation.blockKey}:${recommendation.themeKey}:${recommendation.levelKey}`
       }
     ]);
@@ -48,13 +55,13 @@ export function mainMenuKeyboard(recommendation = null) {
   rows.push(
     ...getActiveBlocks().map((block) => [
       {
-        text: `✨ ${block.name} ✨`,
+        text: cleanMenuLabel(block.name),
         callback_data: `block:${block.key}`
       }
     ])
   );
 
-  rows.push([{ text: "ℹ️🧭 Як це працює", callback_data: "about" }]);
+  rows.push([{ text: "ℹ️ Як це працює", callback_data: "about" }]);
   return { inline_keyboard: rows };
 }
 
@@ -62,12 +69,12 @@ export function subthemesKeyboard(blockKey) {
   const block = getBlock(blockKey);
   const rows = Object.entries(block?.subthemes || {}).map(([key, theme]) => [
     {
-      text: `✨ ${theme.name}`,
+      text: cleanMenuLabel(theme.name),
       callback_data: `theme:${blockKey}:${key}:0`
     }
   ]);
 
-  rows.push([{ text: "🏠✨ Головне меню", callback_data: "home" }]);
+  rows.push([{ text: "🏠 Головне меню", callback_data: "home" }]);
   return { inline_keyboard: rows };
 }
 
@@ -79,7 +86,7 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
   for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
     rows.push(
       pageEntries.slice(index, index + LEVEL_COLUMNS).map(([levelKey, level]) => ({
-        text: decorateLevelName(themeKey, levelKey, level.name),
+        text: cleanMenuLabel(decorateLevelName(themeKey, levelKey, level.name)),
         callback_data: `level:${blockKey}:${themeKey}:${levelKey}:${meta.page}`
       }))
     );
@@ -103,24 +110,24 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
     rows.push(pagination);
   }
 
-  rows.push([{ text: "⬅️🧩 До блоку", callback_data: `block:${blockKey}` }]);
-  rows.push([{ text: "🏠✨ Головне меню", callback_data: "home" }]);
+  rows.push([{ text: "⬅️ До блоку", callback_data: `block:${blockKey}` }]);
+  rows.push([{ text: "🏠 Головне меню", callback_data: "home" }]);
   return { inline_keyboard: rows };
 }
 
 export function resultKeyboard(blockKey, themeKey, levelKey, page = 0) {
   return {
     inline_keyboard: [
-      [{ text: "💡✨ Хочу ще рішення", callback_data: `solution:${blockKey}:${themeKey}` }],
+      [{ text: "💡 Хочу ще рішення", callback_data: `solution:${blockKey}:${themeKey}` }],
       [
         {
-          text: "🎲🔄 Інший варіант",
+          text: "🎲 Інший варіант",
           callback_data: `reroll:${blockKey}:${themeKey}:${levelKey}:${page}`
         }
       ],
-      [{ text: "⬅️📚 До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
-      [{ text: "⬅️🧩 До блоку", callback_data: `block:${blockKey}` }],
-      [{ text: "🏠✨ Головне меню", callback_data: "home" }]
+      [{ text: "⬅️ До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
+      [{ text: "⬅️ До блоку", callback_data: `block:${blockKey}` }],
+      [{ text: "🏠 Головне меню", callback_data: "home" }]
     ]
   };
 }
@@ -128,9 +135,9 @@ export function resultKeyboard(blockKey, themeKey, levelKey, page = 0) {
 export function starterResultKeyboard(blockKey, themeKey, page = 0) {
   return {
     inline_keyboard: [
-      [{ text: "⬅️📚 До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
-      [{ text: "⬅️🧩 До блоку", callback_data: `block:${blockKey}` }],
-      [{ text: "🏠✨ Головне меню", callback_data: "home" }]
+      [{ text: "⬅️ До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
+      [{ text: "⬅️ До блоку", callback_data: `block:${blockKey}` }],
+      [{ text: "🏠 Головне меню", callback_data: "home" }]
     ]
   };
 }
