@@ -32,3 +32,41 @@ export function getActiveBlocks() {
 export function getBlockSubtheme(blockKey, themeKey) {
   return getBlock(blockKey)?.subthemes?.[themeKey] || null;
 }
+
+export function getAllLevelTargets() {
+  const targets = [];
+
+  for (const block of getActiveBlocks()) {
+    for (const [themeKey, theme] of Object.entries(block.subthemes || {})) {
+      for (const [levelKey, level] of Object.entries(theme.levels || {})) {
+        targets.push({
+          blockKey: block.key,
+          block,
+          themeKey,
+          theme,
+          levelKey,
+          level
+        });
+      }
+    }
+  }
+
+  return targets;
+}
+
+export function getRandomRecommendation() {
+  const targets = getAllLevelTargets();
+  if (!targets.length) return null;
+  return targets[Math.floor(Math.random() * targets.length)];
+}
+
+export function findLevelByArticleSlug(articleSlug) {
+  const normalized = String(articleSlug || "").trim().toLowerCase();
+  if (!normalized) return null;
+
+  return (
+    getAllLevelTargets().find(
+      (target) => String(target.level?.articleSlug || "").toLowerCase() === normalized
+    ) || null
+  );
+}
