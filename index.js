@@ -26,7 +26,8 @@ const adminId = process.env.ADMIN_ID;
 const PORT = process.env.PORT || 10000;
 const PRIMARY_BLOCK_KEY = "state_action";
 const ARTICLE_START_PREFIX = "article_";
-const WEBHOOK_PATH = "/telegram/webhook";
+const WEBHOOK_ALLOWED_UPDATES = ["message", "callback_query"];
+const WEBHOOK_RETRY_DELAYS_MS = [700, 1400, 2800, 5000];
 
 if (!token) {
   console.error("❌ BOT_TOKEN не знайдено в Environment Variables");
@@ -36,12 +37,17 @@ if (!token) {
 const webhookSecret = createHash("sha256")
   .update(`habitteen-webhook:${token}`)
   .digest("hex");
+const WEBHOOK_PATH = `/telegram/webhook/${webhookSecret.slice(0, 24)}`;
 
 const bot = new TelegramBot(token, { polling: false });
 console.log("✅ HabitTeen bot v2 запущено у webhook-режимі");
 
 function telegramDescription(error) {
   return error?.response?.body?.description || error?.message || "невідома помилка";
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function hasValidWebhookSecret(req) {
@@ -98,37 +104,102 @@ const server = http.createServer(async (req, res) => {
   res.end("Not Found");
 });
 
+function webhookMatches(info, webhookUrl) {
+  return Boolean(info?.url && info.url === webhookUrl);
+}
+
+function logWebhookInfo(info, webhookUrl, prefix = "✅ Telegram webhook активний") {
+  console.log(`${prefix}: ${info?.url || webhookUrl}`);
+  if (info?.pending_update_count) {
+    console.log(`📨 Telegram pending updates: ${info.pending_update_count}`);
+  }
+  if (info?.last_error_message) {
+    console.warn(`⚠️ Telegram webhook last error: ${info.last_error_message}`);
+  }
+}
+
 async function configureWebhook() {
   const baseUrl = (process.env.WEBHOOK_BASE_URL || process.env.RENDER_EXTERNAL_URL || "")
     .trim()
     .replace(/\/+$/, "");
 
   if (!baseUrl) {
-    console.warn("⚠️ WEBHOOK_BASE_URL/RENDER_EXTERNAL_URL не знайдено — webhook не зареєстровано");
-    return;
+    throw new Error("WEBHOOK_BASE_URL/RENDER_EXTERNAL_URL не знайдено");
   }
 
   const webhookUrl = `${baseUrl}${WEBHOOK_PATH}`;
-  await bot.setWebHook(webhookUrl, {
-    secret_token: webhookSecret,
-    allowed_updates: ["message", "callback_query"]
-  });
+  const currentInfo = await bot.getWebHookInfo();
 
-  const info = await bot.getWebHookInfo();
-  console.log(`✅ Telegram webhook активний: ${info.url || webhookUrl}`);
-  if (info.last_error_message) {
-    console.warn(`⚠️ Telegram webhook last error: ${info.last_error_message}`);
+  if (webhookMatches(currentInfo, webhookUrl)) {
+    logWebhookInfo(currentInfo, webhookUrl, "✅ Telegram webhook уже налаштований");
+    return currentInfo;
   }
+
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= WEBHOOK_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      await bot.setWebHook(webhookUrl, {
+        secret_token: webhookSecret,
+        allowed_updates: WEBHOOK_ALLOWED_UPDATES
+      });
+
+      const info = await bot.getWebHookInfo();
+      if (!webhookMatches(info, webhookUrl)) {
+        throw new Error(`Telegram повернув інший webhook URL: ${info?.url || "empty"}`);
+      }
+
+      logWebhookInfo(info, webhookUrl);
+      return info;
+    } catch (error) {
+      lastError = error;
+      const description = telegramDescription(error);
+      const isSetWebhookConflict = /409|terminated by other setWebhook/i.test(description);
+
+      if (!isSetWebhookConflict) {
+        throw error;
+      }
+
+      const racedInfo = await bot.getWebHookInfo().catch(() => null);
+      if (webhookMatches(racedInfo, webhookUrl)) {
+        logWebhookInfo(
+          racedInfo,
+          webhookUrl,
+          "✅ Telegram webhook налаштований паралельним Render-інстансом"
+        );
+        return racedInfo;
+      }
+
+      const retryDelay = WEBHOOK_RETRY_DELAYS_MS[attempt];
+      if (retryDelay == null) break;
+
+      const delayWithJitter = retryDelay + Math.floor(Math.random() * 250);
+      console.warn(
+        `⚠️ setWebhook conflict, повтор через ${delayWithJitter}ms (${attempt + 1}/${WEBHOOK_RETRY_DELAYS_MS.length})`
+      );
+      await sleep(delayWithJitter);
+    }
+  }
+
+  throw lastError || new Error("Не вдалося налаштувати Telegram webhook");
 }
 
-server.listen(PORT, async () => {
-  console.log(`🌐 Health/webhook server: ${PORT}`);
+async function startWebhookServer() {
   try {
     await configureWebhook();
   } catch (error) {
-    console.error("❌ setWebhook:", telegramDescription(error));
+    console.error("❌ webhook startup:", telegramDescription(error));
+    process.exit(1);
+    return;
   }
-});
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`🌐 Health/webhook server: ${PORT}`);
+    console.log(`🟢 Webhook endpoint ready: ${WEBHOOK_PATH}`);
+  });
+}
+
+startWebhookServer();
 
 function isAdmin(chatId) {
   return adminId && String(chatId) === String(adminId);
