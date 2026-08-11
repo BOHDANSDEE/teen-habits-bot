@@ -21,7 +21,9 @@ import {
   findLevelByArticleSlug,
   getActiveBlocks,
   getAllLevelTargets,
-  getRandomRecommendation
+  getRandomBlockHint,
+  getRandomLevelHint,
+  getRandomThemeHint
 } from "../src/navigation.js";
 import { buildContinuation, buildResult } from "../src/renderer.js";
 
@@ -51,20 +53,33 @@ assert.ok(RESERVED_BLOCK_SLOTS.every((slot) => slot.enabled === false));
 assert.equal(getActiveBlocks().length, 6, "main block plus five starter blocks must be active");
 assert.equal(getAllLevelTargets().length, 60, "45 mature levels + 15 starter levels must be discoverable");
 
-const recommendation = getRandomRecommendation();
-assert.ok(recommendation, "main menu must be able to recommend a level");
-assert.ok(getActiveBlocks().some((block) => block.key === recommendation.blockKey));
-assert.ok(recommendation.level?.articleSlug);
+const blockHint = getRandomBlockHint();
+assert.ok(blockHint, "main menu hint must be able to suggest a block");
+assert.ok(getActiveBlocks().some((block) => block.key === blockHint.blockKey));
+assert.equal(blockHint.themeKey, undefined, "first hint stage must not preselect a subtheme");
+assert.equal(blockHint.levelKey, undefined, "first hint stage must not preselect a level");
 
-const homeKeyboard = mainMenuKeyboard(recommendation);
+const themeHint = getRandomThemeHint(blockHint.blockKey);
+assert.ok(themeHint?.themeKey, "second hint stage must suggest a subtheme");
+assert.equal(themeHint.levelKey, undefined, "second hint stage must not preselect a level");
+
+const levelHint = getRandomLevelHint(blockHint.blockKey, themeHint.themeKey);
+assert.ok(levelHint?.levelKey, "third hint stage must suggest a level");
+assert.ok(levelHint.level?.articleSlug);
+
+const homeKeyboard = mainMenuKeyboard();
 assert.equal(
   homeKeyboard.inline_keyboard.length,
   8,
-  "home shows recommendation, six active blocks and about button"
+  "home shows one hint button, six active blocks and about button"
 );
 assert.ok(
-  flattenButtons(homeKeyboard).some((button) => button.callback_data.startsWith("recommend:")),
-  "home must expose the recommended level action"
+  flattenButtons(homeKeyboard).some((button) => button.callback_data === "hint:block"),
+  "home must expose the first staged hint action"
+);
+assert.ok(
+  !flattenButtons(homeKeyboard).some((button) => button.callback_data.startsWith("recommend:")),
+  "new home menu must not expose direct-to-result recommendation callbacks"
 );
 for (const blockKey of [PRIMARY_BLOCK_KEY, ...futureBlockKeys]) {
   assert.ok(
@@ -75,8 +90,24 @@ for (const blockKey of [PRIMARY_BLOCK_KEY, ...futureBlockKeys]) {
 assert.ok(!flattenButtons(homeKeyboard).some((button) => /block:future_/i.test(button.callback_data)));
 assertCallbackSizes(homeKeyboard);
 
+const hintedHomeKeyboard = mainMenuKeyboard(blockHint);
+assert.ok(
+  flattenButtons(hintedHomeKeyboard).some((button) => button.callback_data === `block:${blockHint.blockKey}`),
+  "a block hint must remain a choice, not an automatic navigation"
+);
+assert.ok(
+  flattenButtons(hintedHomeKeyboard).some((button) => button.callback_data === "hint:block"),
+  "a person must be able to request another block hint"
+);
+assertCallbackSizes(hintedHomeKeyboard);
+
 const blockKeyboard = subthemesKeyboard(PRIMARY_BLOCK_KEY);
-assert.equal(blockKeyboard.inline_keyboard.length, 4, "primary block shows 3 subthemes plus main menu");
+assert.equal(blockKeyboard.inline_keyboard.length, 5, "primary block shows hint, 3 subthemes and main menu");
+assert.ok(
+  flattenButtons(blockKeyboard).some(
+    (button) => button.callback_data === `hint:theme:${PRIMARY_BLOCK_KEY}`
+  )
+);
 assertCallbackSizes(blockKeyboard);
 
 const allArticleSlugs = new Set();
@@ -102,6 +133,11 @@ for (const themeKey of expectedThemes) {
   assert.ok(flattenButtons(secondPage).some((button) => button.text === "⬅️"));
   assert.ok(flattenButtons(firstPage).some((button) => button.text === "📄 1/2"));
   assert.ok(flattenButtons(secondPage).some((button) => button.text === "📄 2/2"));
+  assert.ok(
+    flattenButtons(firstPage).some(
+      (button) => button.callback_data === `hint:level:${PRIMARY_BLOCK_KEY}:${themeKey}`
+    )
+  );
   assert.ok(
     flattenButtons(firstPage).some(
       (button) => button.callback_data === `block:${PRIMARY_BLOCK_KEY}`
@@ -223,7 +259,10 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
   assert.equal(Object.keys(block.subthemes).length, 3, `${blockKey} must start with 3 subthemes`);
 
   const subthemes = subthemesKeyboard(blockKey);
-  assert.equal(subthemes.inline_keyboard.length, 4, `${blockKey} shows 3 subthemes plus home`);
+  assert.equal(subthemes.inline_keyboard.length, 5, `${blockKey} shows hint, 3 subthemes plus home`);
+  assert.ok(
+    flattenButtons(subthemes).some((button) => button.callback_data === `hint:theme:${blockKey}`)
+  );
   assertCallbackSizes(subthemes);
 
   for (const [themeKey, theme] of Object.entries(block.subthemes)) {
@@ -258,6 +297,11 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
     const keyboard = levelsKeyboard(blockKey, themeKey, 0);
     const levelButtons = flattenButtons(keyboard).filter((button) => button.callback_data.startsWith("level:"));
     assert.equal(levelButtons.length, 1);
+    assert.ok(
+      flattenButtons(keyboard).some(
+        (button) => button.callback_data === `hint:level:${blockKey}:${themeKey}`
+      )
+    );
     assertCallbackSizes(keyboard);
 
     const result = buildGenericResult(blockKey, themeKey, levelKey);
@@ -301,5 +345,5 @@ assert.equal(allArticleSlugs.size, 45, "HabitTeen must keep exactly 45 mature ar
 assert.equal(totalPoolItems, 7500, "HabitTeen must keep exactly 7,500 pool items");
 
 console.log(
-  "✅ HabitTeen multi-block test passed: 45 mature levels + 15 starter levels across 5 future-site blocks"
+  "✅ HabitTeen multi-block test passed: 45 mature levels + 15 starter levels + staged hints"
 );
