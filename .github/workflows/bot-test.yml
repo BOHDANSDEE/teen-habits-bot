@@ -23,4 +23,6 @@ jobs:
       - run: node --check src/content.js
       - run: node --check src/pools.js
       - run: node --check src/renderer.js
+      - run: node --check src/generic-result.js
+      - run: node --check src/navigation-keyboards.js
       - run: npm test
