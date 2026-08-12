@@ -20,6 +20,6 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
     levelKey,
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
-    text: `🧭✨ *${block.name}*\n${theme.name}\n\n🎯✨ *${level.articleTitle}*\n\n🧭 ${level.summary}\n\n🌿🧠 *Стан*\n${level.state}\n\n🧩⚠️ *Проблема*\n${level.problem}\n\n🪞🎁 *Вторинна вигода*\n${level.secondaryGain}\n\n🌟🧭 *Значення в житті*\n${level.meaning}\n\n🚀✅ *Що зробити зараз*\n${formatActions(level.actions)}\n\n🔑✨ *Афірмація*\n${level.affirmation}${note}\n\n🌱 Це стартовий рівень майбутнього тематичного блоку. Коли для напряму буде окремий сайт, цей рівень можна напряму зв’язати зі статтею через той самий articleSlug.`
+    text: `🌿🧠 *Стан*\n${level.state}\n\n🧩⚠️ *Що заважає*\n${level.problem}\n\n🪞🎁 *Що тримає цей сценарій*\n${level.secondaryGain}\n\n🌟🧭 *Навіщо це змінювати*\n${level.meaning}\n\n🚀✅ *Що зробити зараз*\n${formatActions(level.actions)}\n\n🔑✨ *Рішення*\n${level.affirmation}\n\n🕯️ Не просто перечитай рішення. Обери з нього одну думку, яку підтвердиш конкретною дією сьогодні.${note}\n\n🧭 *Тема цього рішення*\n${level.articleTitle}\n\n${level.summary}`
   };
 }
