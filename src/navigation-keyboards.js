@@ -62,7 +62,6 @@ export function mainMenuKeyboard(recommendation = null) {
     ])
   );
 
-  rows.push([{ text: "ℹ️ Як це працює", callback_data: "about" }]);
   return { inline_keyboard: rows };
 }
 
