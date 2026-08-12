@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "test": "node tests/prototype.test.mjs && node tests/navigation-grid.test.mjs && node tests/webhook.test.mjs"
+    "test": "node tests/experience-flow.test.mjs && node tests/navigation-grid.test.mjs && node tests/webhook.test.mjs"
   },
   "keywords": [],
   "author": "",
