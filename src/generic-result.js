@@ -20,6 +20,6 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
     levelKey,
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
-    text: `🌿🧠 *Стан*\n${level.state}\n\n🧩⚠️ *Що заважає*\n${level.problem}\n\n🪞🎁 *Що тримає цей сценарій*\n${level.secondaryGain}\n\n🌟🧭 *Навіщо це змінювати*\n${level.meaning}\n\n🚀✅ *Що зробити зараз*\n${formatActions(level.actions)}\n\n🔑✨ *Рішення*\n${level.affirmation}\n\n🕯️ Не просто перечитай рішення. Обери з нього одну думку, яку підтвердиш конкретною дією сьогодні.${note}\n\n🧭 *Тема цього рішення*\n${level.articleTitle}\n\n${level.summary}`
+    text: `🪞 *Ти відчуваєш це так*\nТи відчуваєш, що ${level.state}\n\nТобі найбільше заважає те, що ${level.problem}\n\nСтарий сценарій тримається, бо він допомагає ${level.secondaryGain}\n\nЗмінювати його варто, щоб ${level.meaning}\n\n🎯 У цій темі фокус такий: ${level.summary}\n\n🚀✅ *Що спробувати зараз*\n${formatActions(level.actions)}${note}\n\n🔑✨ *Рішення*\n${level.affirmation}\n\n_Скажи це своїми словами й підтверди одним маленьким кроком сьогодні._`
   };
 }
