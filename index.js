@@ -40,7 +40,7 @@ const webhookSecret = createHash("sha256")
 const WEBHOOK_PATH = `/telegram/webhook/${webhookSecret.slice(0, 24)}`;
 
 const bot = new TelegramBot(token, { polling: false });
-console.log("✅ HabitTeen bot v2 запущено у webhook-режимі");
+console.log("✅ Telegram bot запущено у webhook-режимі");
 
 function telegramDescription(error) {
   return error?.response?.body?.description || error?.message || "невідома помилка";
@@ -96,7 +96,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("HabitTeen bot v2 is running");
+    res.end("Bot is running");
     return;
   }
 
@@ -278,7 +278,7 @@ function humanizeNavigationText(text = "") {
 function recommendationText(recommendation) {
   if (!recommendation) return "";
 
-  return `\n\n🎲✨ Вам рекомендується зараз:\n${recommendation.block.name}\n${recommendation.theme.name}\n📖 ${recommendation.level.articleTitle}\n\nНатисни «Підказка» — бот одразу покаже розбір і конкретне рішення.`;
+  return `\n\n🎲 Можеш почати з цього:\n${recommendation.theme.name}\n📖 ${recommendation.level.articleTitle}`;
 }
 
 async function showHome(chatId, messageId = null) {
@@ -295,17 +295,8 @@ async function showHome(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     targetMessageId,
-    `👋✨ HabitTeen${recommendationText(recommendation)}\n\n🧭 Або обери блок самостійно. Тепер тут є не лише «Стан, енергія та дія», а й стартові напрями про здоров’я, розвиток, навчання, стосунки та порядок у житті.\n\n🔄 Навігаційне меню змінюється в одному повідомленні. А коли натискаєш «Хочу рішення про це», наступний розбір приходить окремим повідомленням, щоб попередній залишався в історії.`,
+    `🧭 Обери, що хочеш розібрати.${recommendationText(recommendation)}`,
     { reply_markup: mainMenuKeyboard(recommendation) }
-  );
-}
-
-async function showAbout(chatId, messageId = null) {
-  await renderNavigation(
-    chatId,
-    messageId,
-    `ℹ️🧭 Як це працює\n\n1️⃣ У головному меню бот рекомендує одну конкретну ситуацію з активних напрямів.\n2️⃣ Можна відкрити підказку одразу або самостійно обрати блок і підблок.\n3️⃣ У головному HabitTeen-напрямі є 45 конкретних ситуацій, а в нових тематичних блоках — стартові варіанти.\n4️⃣ Ситуації показуються сторінками максимум по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n5️⃣ Після вибору отримуєш чіткий розбір: стан, що заважає, що тримає сценарій, навіщо це змінювати, 3 практичні кроки та рішення.\n6️⃣ Унизу бот одразу показує одну наступну тему, яка може допомогти продовжити роботу.\n7️⃣ Натискаєш «Хочу рішення про це» — новий розбір приходить окремим повідомленням, а попередній текст залишається в чаті.\n8️⃣ З результату можна повернутися до ситуацій, до блоку або в головне меню.`,
-    { reply_markup: mainMenuKeyboard(getRandomRecommendation()) }
   );
 }
 
@@ -325,7 +316,7 @@ async function showBlock(chatId, blockKey, messageId = null) {
   await renderNavigation(
     chatId,
     messageId,
-    `${block.name}\n\n${humanizeNavigationText(block.description)}\n\n🧩 Обери підблок, який зараз найближчий до твоєї ситуації.`,
+    `${block.name}\n\n${humanizeNavigationText(block.description)}\n\n🧩 Обери напрям, який зараз найближчий до твоєї ситуації.`,
     { reply_markup: subthemesKeyboard(blockKey) }
   );
 }
@@ -348,7 +339,7 @@ async function showTheme(chatId, blockKey, themeKey, page = 0, messageId = null)
   await renderNavigation(
     chatId,
     messageId,
-    `${theme.name}\n\n${humanizeNavigationText(theme.description)}\n\n📚 Обери ситуацію, яка зараз найближча. Усього ${meta.totalItems}; на одній сторінці показуємо максимум 8.\n📄 Сторінка ${meta.page + 1}/${meta.totalPages}.`,
+    `${theme.name}\n\n${humanizeNavigationText(theme.description)}\n\n📚 Обери ситуацію, яка зараз найближча. Усього ${meta.totalItems}.\n📄 ${meta.page + 1}/${meta.totalPages}`,
     { reply_markup: levelsKeyboard(blockKey, themeKey, meta.page) }
   );
 }
@@ -491,7 +482,7 @@ bot.onText(/\/stats$/, async (msg) => {
   const stats = getStats();
   await safeSend(
     msg.chat.id,
-    `📊 HabitTeen v2\n\n/start: ${stats.starts}\nРезультатів: ${stats.results}\nПродовжень: ${stats.continuations}\nПодій у журналі: ${stats.events.length}`
+    `📊 Бот\n\n/start: ${stats.starts}\nРезультатів: ${stats.results}\nПродовжень: ${stats.continuations}\nПодій у журналі: ${stats.events.length}`
   );
 });
 
@@ -515,7 +506,7 @@ bot.on("callback_query", async (query) => {
     return;
   }
   if (data === "about") {
-    await showAbout(chatId, messageId);
+    await showHome(chatId, messageId);
     return;
   }
 
