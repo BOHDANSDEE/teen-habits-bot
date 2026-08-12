@@ -269,10 +269,16 @@ async function renderNavigation(chatId, messageId, text, options = {}) {
   return sent;
 }
 
+function humanizeNavigationText(text = "") {
+  return String(text || "")
+    .replace(/конкретний рівень ситуації/gu, "конкретну ситуацію")
+    .replace(/Пілотні рівні/gu, "Пілотні варіанти");
+}
+
 function recommendationText(recommendation) {
   if (!recommendation) return "";
 
-  return `\n\n🎲✨ Вам рекомендується зараз:\n${recommendation.block.name}\n${recommendation.theme.name}\n🎯 ${recommendation.level.name}\n📖 Тема: ${recommendation.level.articleTitle}\n\nНатисни «Відкрити рекомендований рівень» — бот одразу покаже розбір і практичні кроки.`;
+  return `\n\n🎲✨ Вам рекомендується зараз:\n${recommendation.block.name}\n${recommendation.theme.name}\n📖 ${recommendation.level.articleTitle}\n\nНатисни «Підказка» — бот одразу покаже розбір і конкретне рішення.`;
 }
 
 async function showHome(chatId, messageId = null) {
@@ -289,7 +295,7 @@ async function showHome(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     targetMessageId,
-    `👋✨ HabitTeen${recommendationText(recommendation)}\n\n🧭 Або обери блок самостійно. Тепер тут є не лише «Стан, енергія та дія», а й стартові напрями про здоров’я, розвиток, навчання, стосунки та порядок у житті.\n\n🔄 Меню працює в одному повідомленні: натискаєш кнопку — ця ж сторінка змінюється, тому старі кнопки не накопичуються в чаті.`,
+    `👋✨ HabitTeen${recommendationText(recommendation)}\n\n🧭 Або обери блок самостійно. Тепер тут є не лише «Стан, енергія та дія», а й стартові напрями про здоров’я, розвиток, навчання, стосунки та порядок у житті.\n\n🔄 Навігаційне меню змінюється в одному повідомленні. А коли натискаєш «Хочу рішення про це», наступний розбір приходить окремим повідомленням, щоб попередній залишався в історії.`,
     { reply_markup: mainMenuKeyboard(recommendation) }
   );
 }
@@ -298,7 +304,7 @@ async function showAbout(chatId, messageId = null) {
   await renderNavigation(
     chatId,
     messageId,
-    `ℹ️🧭 Як це працює\n\n1️⃣ У головному меню бот випадково рекомендує один рівень із усіх активних напрямів.\n2️⃣ Можна відкрити рекомендацію одразу або самостійно обрати великий блок і підблок.\n3️⃣ Повний HabitTeen-блок має 45 рівнів, а нові тематичні блоки поки мають по одному стартовому рівню на підблок.\n4️⃣ Коли для нового напряму з’явиться окремий сайт, його статті можна зв’язати з цими рівнями тим самим deep-link механізмом.\n5️⃣ Рівні показуються сторінками максимум по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n6️⃣ Після вибору отримуєш розбір: стан, проблему, вторинну вигоду, значення в житті, 3 практичні кроки та афірмацію.\n7️⃣ З результату можна повернутися до рівнів, до блоку або одразу в головне меню.`,
+    `ℹ️🧭 Як це працює\n\n1️⃣ У головному меню бот рекомендує одну конкретну ситуацію з активних напрямів.\n2️⃣ Можна відкрити підказку одразу або самостійно обрати блок і підблок.\n3️⃣ У головному HabitTeen-напрямі є 45 конкретних ситуацій, а в нових тематичних блоках — стартові варіанти.\n4️⃣ Ситуації показуються сторінками максимум по 8 кнопок — між сторінками можна рухатися стрілками ⬅️ ➡️.\n5️⃣ Після вибору отримуєш чіткий розбір: стан, що заважає, що тримає сценарій, навіщо це змінювати, 3 практичні кроки та рішення.\n6️⃣ Унизу бот одразу показує одну наступну тему, яка може допомогти продовжити роботу.\n7️⃣ Натискаєш «Хочу рішення про це» — новий розбір приходить окремим повідомленням, а попередній текст залишається в чаті.\n8️⃣ З результату можна повернутися до ситуацій, до блоку або в головне меню.`,
     { reply_markup: mainMenuKeyboard(getRandomRecommendation()) }
   );
 }
@@ -319,7 +325,7 @@ async function showBlock(chatId, blockKey, messageId = null) {
   await renderNavigation(
     chatId,
     messageId,
-    `${block.name}\n\n${block.description}\n\n🧩 Обери підблок, який зараз найближчий до твоєї ситуації.`,
+    `${block.name}\n\n${humanizeNavigationText(block.description)}\n\n🧩 Обери підблок, який зараз найближчий до твоєї ситуації.`,
     { reply_markup: subthemesKeyboard(blockKey) }
   );
 }
@@ -342,7 +348,7 @@ async function showTheme(chatId, blockKey, themeKey, page = 0, messageId = null)
   await renderNavigation(
     chatId,
     messageId,
-    `${theme.name}\n\n${theme.description}\n\n📚 Обери рівень. Усього ${meta.totalItems}; на одній сторінці показуємо максимум 8.\n📄 Сторінка ${meta.page + 1}/${meta.totalPages}.`,
+    `${theme.name}\n\n${humanizeNavigationText(theme.description)}\n\n📚 Обери ситуацію, яка зараз найближча. Усього ${meta.totalItems}; на одній сторінці показуємо максимум 8.\n📄 Сторінка ${meta.page + 1}/${meta.totalPages}.`,
     { reply_markup: levelsKeyboard(blockKey, themeKey, meta.page) }
   );
 }
@@ -378,7 +384,7 @@ async function sendResult(
 
   const replyMarkup =
     blockKey === PRIMARY_BLOCK_KEY
-      ? resultKeyboard(blockKey, themeKey, levelKey, page)
+      ? resultKeyboard(blockKey, themeKey, levelKey, page, result.next)
       : starterResultKeyboard(blockKey, themeKey, page);
 
   await renderNavigation(chatId, messageId, result.text, {
@@ -387,13 +393,24 @@ async function sendResult(
   });
 }
 
-async function sendContinuation(chatId, blockKey, previousThemeKey, messageId = null) {
+async function sendContinuation(
+  chatId,
+  blockKey,
+  previousThemeKey,
+  targetThemeKey = null,
+  targetLevelKey = null,
+  messageId = null
+) {
   if (blockKey !== PRIMARY_BLOCK_KEY) {
     await showBlock(chatId, blockKey, messageId);
     return;
   }
 
-  const continuation = buildContinuation(previousThemeKey);
+  const continuation = buildContinuation(
+    previousThemeKey,
+    targetThemeKey,
+    targetLevelKey
+  );
   if (!continuation) {
     await showBlock(chatId, blockKey, messageId);
     return;
@@ -416,9 +433,19 @@ async function sendContinuation(chatId, blockKey, previousThemeKey, messageId = 
     page
   });
 
-  await renderNavigation(chatId, messageId, continuation.text, {
+  if (messageId) {
+    await retireActiveMenu(chatId);
+  }
+
+  await renderNavigation(chatId, null, continuation.text, {
     parse_mode: "Markdown",
-    reply_markup: resultKeyboard(blockKey, continuation.themeKey, continuation.levelKey, page)
+    reply_markup: resultKeyboard(
+      blockKey,
+      continuation.themeKey,
+      continuation.levelKey,
+      page,
+      continuation.next
+    )
   });
 }
 
@@ -588,13 +615,33 @@ bot.on("callback_query", async (query) => {
 
   if (data.startsWith("solution:")) {
     const parts = data.split(":");
+    const targetThemeKey = parts[1] || null;
+    const targetLevelKey = parts[2] || null;
+    const targetTheme =
+      parts.length === 3 && targetThemeKey
+        ? getBlockSubtheme(PRIMARY_BLOCK_KEY, targetThemeKey)
+        : null;
+
+    if (targetTheme?.levels?.[targetLevelKey]) {
+      const previousThemeKey = getUser(chatId).currentThemeKey || targetThemeKey;
+      await sendContinuation(
+        chatId,
+        PRIMARY_BLOCK_KEY,
+        previousThemeKey,
+        targetThemeKey,
+        targetLevelKey,
+        messageId
+      );
+      return;
+    }
+
     const blockKey =
       parts.length >= 3 && getBlock(parts[1]) ? parts[1] : PRIMARY_BLOCK_KEY;
     const themeKey =
       blockKey === PRIMARY_BLOCK_KEY && parts[1] !== PRIMARY_BLOCK_KEY
         ? parts[1]
         : parts[2];
-    await sendContinuation(chatId, blockKey, themeKey, messageId);
+    await sendContinuation(chatId, blockKey, themeKey, null, null, messageId);
     return;
   }
 
