@@ -13,6 +13,7 @@ function normalizePage(page, totalPages) {
 function cleanMenuLabel(text) {
   return String(text || "")
     .replace(/[✨⭐🌟]/gu, "")
+    .replace(/\b\d+\s*·\s*/u, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
@@ -115,17 +116,22 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
   return { inline_keyboard: rows };
 }
 
-export function resultKeyboard(blockKey, themeKey, levelKey, page = 0) {
+export function resultKeyboard(blockKey, themeKey, levelKey, page = 0, next = null) {
+  const solutionCallback =
+    next?.themeKey && next?.levelKey
+      ? `solution:${next.themeKey}:${next.levelKey}`
+      : `solution:${blockKey}:${themeKey}`;
+
   return {
     inline_keyboard: [
-      [{ text: "💡 Хочу ще рішення", callback_data: `solution:${blockKey}:${themeKey}` }],
+      [{ text: "💡 Хочу рішення про це", callback_data: solutionCallback }],
       [
         {
           text: "🎲 Інший варіант",
           callback_data: `reroll:${blockKey}:${themeKey}:${levelKey}:${page}`
         }
       ],
-      [{ text: "⬅️ До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
+      [{ text: "⬅️ До ситуацій", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
       [{ text: "⬅️ До блоку", callback_data: `block:${blockKey}` }],
       [{ text: "🏠 Головне меню", callback_data: "home" }]
     ]
@@ -135,7 +141,7 @@ export function resultKeyboard(blockKey, themeKey, levelKey, page = 0) {
 export function starterResultKeyboard(blockKey, themeKey, page = 0) {
   return {
     inline_keyboard: [
-      [{ text: "⬅️ До рівнів", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
+      [{ text: "⬅️ До ситуацій", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
       [{ text: "⬅️ До блоку", callback_data: `block:${blockKey}` }],
       [{ text: "🏠 Головне меню", callback_data: "home" }]
     ]

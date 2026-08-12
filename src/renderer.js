@@ -1,6 +1,4 @@
 import {
-  CONTINUATION_BRIDGES,
-  FEELING_INTROS,
   getLevel,
   getRandomLevelKey,
   getRandomRelatedTheme,
@@ -15,73 +13,100 @@ const formatActions = (actions = []) =>
     .map((action, index) => `${["1️⃣", "2️⃣", "3️⃣"][index]} ${action}`)
     .join("\n");
 
+const LEVEL_LANGUAGE_REPLACEMENTS = [
+  [/У цьому рівні/gu, "У цій ситуації"],
+  [/Ключова ознака цього рівня/gu, "Ключова ознака цього стану"],
+  [/Цей рівень відчувається так/gu, "Ця ситуація відчувається так"],
+  [/Проблемний вузол цього рівня/gu, "Проблемний вузол цієї ситуації"],
+  [/Цей рівень стає важчим/gu, "Ця ситуація стає важчою"],
+  [/Цей рівень вчить/gu, "Цей досвід вчить"],
+  [/Робота з цим рівнем/gu, "Робота з цим станом"],
+  [/Цей рівень показує/gu, "Цей досвід показує"],
+  [/Результат роботи з цим рівнем/gu, "Результат роботи з цим станом"]
+];
+
+function makeUserFacing(text = "") {
+  return LEVEL_LANGUAGE_REPLACEMENTS.reduce(
+    (result, [pattern, replacement]) => result.replace(pattern, replacement),
+    String(text || "")
+  );
+}
+
+function buildNextSuggestion(currentThemeKey) {
+  const themeKey = getRandomRelatedTheme(currentThemeKey);
+  const levelKey = getRandomLevelKey(themeKey);
+  const theme = getSubtheme(themeKey);
+  const level = getLevel(themeKey, levelKey);
+
+  if (!theme || !level) return null;
+
+  return {
+    themeKey,
+    levelKey,
+    themeName: theme.name,
+    articleTitle: level.articleTitle,
+    summary: level.summary
+  };
+}
+
+function formatNextSuggestion(next) {
+  if (!next) return "";
+
+  return `\n\n🧭💡 *Що може допомогти далі*\n${next.articleTitle}\n\n${next.summary}\n\nЯкщо це схоже на твою ситуацію, натисни «Хочу рішення про це». Наступний розбір прийде окремим повідомленням, а цей залишиться в історії.`;
+}
+
 export function buildResult(themeKey, levelKey) {
   const theme = getSubtheme(themeKey);
   const level = getLevel(themeKey, levelKey);
   if (!theme || !level) return null;
 
   const pools = theme.pools || {};
-  const state = expandSection(themeKey, "states", pickRandom(pools.states));
-  const problem = expandSection(themeKey, "problems", pickRandom(pools.problems));
-  const secondaryGain = expandSection(
-    themeKey,
-    "secondaryGains",
-    pickRandom(pools.secondaryGains)
+  const state = makeUserFacing(
+    expandSection(themeKey, "states", pickRandom(pools.states))
   );
-  const meaning = expandSection(themeKey, "meanings", pickRandom(pools.meanings));
-  const affirmation = expandSection(
-    themeKey,
-    "affirmations",
-    pickRandom(pools.affirmations)
+  const problem = makeUserFacing(
+    expandSection(themeKey, "problems", pickRandom(pools.problems))
   );
+  const secondaryGain = makeUserFacing(
+    expandSection(themeKey, "secondaryGains", pickRandom(pools.secondaryGains))
+  );
+  const meaning = makeUserFacing(
+    expandSection(themeKey, "meanings", pickRandom(pools.meanings))
+  );
+  const solution = makeUserFacing(
+    expandSection(themeKey, "affirmations", pickRandom(pools.affirmations))
+  );
+  const next = buildNextSuggestion(themeKey);
 
   return {
     themeKey,
     levelKey,
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
-    text: `${pickRandom(FEELING_INTROS)}
-
-🎯✨ *${level.articleTitle}*
-
-🧭 ${level.summary}
-
-🌿🧠 *Стан*
-${state}
-
-🧩⚠️ *Проблема*
-${problem}
-
-🪞🎁 *Вторинна вигода*
-${secondaryGain}
-
-🌟🧭 *Значення в житті*
-${meaning}
-
-🚀✅ *Що зробити зараз*
-${formatActions(level.actions)}
-
-🔑✨ *Афірмація*
-${affirmation}
-
-🕯️ Прочитай афірмацію повільно 3 рази. Не поспішай: важливо не просто повторити слова, а співвіднести їх зі своєю реальною ситуацією та наступною дією.
-
-💚 Один розбір не зобов’язує вирішити все одразу. Якщо відчуваєш, що тема зачепила лише частину ситуації, натисни «Хочу ще рішення» — бот продовжить із пов’язаного рівня.
-
-_Це не медичний діагноз. Блок допомагає розібрати обраний поведінковий та емоційний патерн, побачити його функцію і перейти до конкретної дії._`
+    next,
+    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Що заважає*\n${problem}\n\n🪞🎁 *Що тримає цей сценарій*\n${secondaryGain}\n\n🌟🧭 *Навіщо це змінювати*\n${meaning}\n\n🚀✅ *Що зробити зараз*\n${formatActions(level.actions)}\n\n🔑✨ *Рішення*\n${solution}\n\n🕯️ Не просто перечитай рішення. Обери з нього одну думку, яку підтвердиш конкретною дією сьогодні.\n\n_Це не медичний діагноз. Блок допомагає розібрати обраний поведінковий та емоційний патерн, побачити його функцію і перейти до конкретної дії._${formatNextSuggestion(next)}`
   };
 }
 
-export function buildContinuation(previousThemeKey) {
-  const themeKey = getRandomRelatedTheme(previousThemeKey);
-  const levelKey = getRandomLevelKey(themeKey);
-  const theme = getSubtheme(themeKey);
-  const result = buildResult(themeKey, levelKey);
+export function buildContinuation(
+  previousThemeKey,
+  targetThemeKey = null,
+  targetLevelKey = null
+) {
+  const requestedTheme = targetThemeKey ? getSubtheme(targetThemeKey) : null;
+  const requestedLevel =
+    requestedTheme && targetLevelKey
+      ? getLevel(targetThemeKey, targetLevelKey)
+      : null;
 
-  if (!theme || !result) return null;
+  const themeKey =
+    requestedTheme && requestedLevel
+      ? targetThemeKey
+      : getRandomRelatedTheme(previousThemeKey);
+  const levelKey =
+    requestedTheme && requestedLevel
+      ? targetLevelKey
+      : getRandomLevelKey(themeKey);
 
-  return {
-    ...result,
-    text: `🔄✨ Продовження: ${theme.name}\n\n${pickRandom(CONTINUATION_BRIDGES)}\n\n${result.text}`
-  };
+  return buildResult(themeKey, levelKey);
 }
