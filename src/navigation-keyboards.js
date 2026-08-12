@@ -13,6 +13,7 @@ function normalizePage(page, totalPages) {
 function cleanMenuLabel(text) {
   return String(text || "")
     .replace(/[✨⭐🌟]/gu, "")
+    .replace(/\b\d+\s*·\s*/u, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
