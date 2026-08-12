@@ -62,6 +62,7 @@ export function mainMenuKeyboard(recommendation = null) {
     ])
   );
 
+  rows.push([{ text: "🔄 Інша підказка", callback_data: "home" }]);
   return { inline_keyboard: rows };
 }
 
