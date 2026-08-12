@@ -26,6 +26,10 @@ assert.match(source, /await showHome\(msg\.chat\.id, null\);/, "manual /start mu
 assert.match(source, /await retirePromise;/, "old menu cleanup must complete after fresh rendering starts");
 assert.doesNotMatch(source, /"article-deeplink",\s*user\.menuMessageId/s, "article deep-link must not edit a stale menu message");
 
+assert.doesNotMatch(source, /HabitTeen/, "old public brand must not appear in runtime copy");
+assert.doesNotMatch(source, /ℹ️🧭 Як це працює/, "long onboarding copy must stay removed");
+assert.match(source, /🧭 Обери, що хочеш розібрати\./, "manual start must use a short action-first prompt");
+
 assert.match(
   source,
   /async function sendContinuation\(\s*chatId,\s*blockKey,\s*previousThemeKey,\s*targetThemeKey = null,\s*targetLevelKey = null,\s*messageId = null\s*\)/s,
@@ -70,4 +74,4 @@ assert.match(
 assert.doesNotMatch(source, /bot\.on\(["']polling_error["']/, "polling error listener should be removed");
 assert.doesNotMatch(source, /polling:\s*true/, "long polling must not be enabled");
 
-console.log("✅ HabitTeen webhook/start test passed: stable webhook + fresh separate solution messages enabled");
+console.log("✅ Webhook/start test passed: brand-free short entry + separate solution messages enabled");

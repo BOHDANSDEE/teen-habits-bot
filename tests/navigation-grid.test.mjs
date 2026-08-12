@@ -68,7 +68,9 @@ try {
 const menu = mainMenuKeyboard(getRandomRecommendation());
 const menuButtons = menu.inline_keyboard.flat();
 assert.ok(menuButtons.some((button) => button.text === "🎲 Підказка"));
+assert.ok(menuButtons.some((button) => button.text === "🔄 Інша підказка"));
+assert.ok(menuButtons.every((button) => button.text !== "ℹ️ Як це працює"));
 assert.ok(menuButtons.some((button) => button.text === "🏠 Головне меню") === false);
 assert.ok(menuButtons.every((button) => !button.text.includes("✨")), "main menu buttons should not be wrapped in star emojis");
 
-console.log("✅ HabitTeen navigation test passed: 2×4 levels + hierarchical hint + cleaner buttons");
+console.log("✅ Navigation test passed: compact menu, no onboarding button, 2×4 situations");

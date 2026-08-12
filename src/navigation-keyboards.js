@@ -62,7 +62,7 @@ export function mainMenuKeyboard(recommendation = null) {
     ])
   );
 
-  rows.push([{ text: "ℹ️ Як це працює", callback_data: "about" }]);
+  rows.push([{ text: "🔄 Інша підказка", callback_data: "home" }]);
   return { inline_keyboard: rows };
 }
 
