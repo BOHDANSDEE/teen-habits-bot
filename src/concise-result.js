@@ -3,6 +3,7 @@ import { getLevelLifeMeaningPool, getLevelSecondaryGainPool, getProblemFact } fr
 import { LAZY_AFTER_STATES } from "./after-state-lazy.js";
 import { APATHY_AFTER_STATES } from "./after-state-apathy.js";
 import { PROCRASTINATION_AFTER_STATES } from "./after-state-procrastination.js";
+import { buildPlainSecondaryGain } from "./plain-secondary-gain.js";
 
 const REFERRAL = /фахів|лікар|професійн\w*\s+оцінк|медичн\w*\s+оцінк/iu;
 const AFTER = {
@@ -86,11 +87,11 @@ export function buildResult(themeKey, levelKey) {
     : "Через це той самий сценарій повторюється знову.";
   const problem = `${problemFirst} ${problemSecond}`;
 
-  const gainParts = pickTwoSafe(getLevelSecondaryGainPool(themeKey, levelKey), [
-    "Ти отримуєш коротке полегшення, бо зміни не потрібні прямо зараз.",
-    "Саме це коротке полегшення й утримує старий сценарій."
-  ]);
-  const gain = gainParts.join(" ");
+  const gainRaw = pickSafe(
+    getLevelSecondaryGainPool(themeKey, levelKey),
+    "не витрачати сили на зміни прямо зараз"
+  );
+  const gain = buildPlainSecondaryGain(gainRaw);
 
   const meaningParts = pickTwoSafe(getLevelLifeMeaningPool(themeKey, levelKey), [
     "У житті це повторюється у твоїх рішеннях і забирає частину уваги.",
