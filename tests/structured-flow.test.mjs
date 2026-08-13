@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { MAIN_BLOCK, getLevel } from "../src/content.js";
+import { MAIN_BLOCK } from "../src/content.js";
 import { FUTURE_BLOCKS } from "../src/future-blocks.js";
 import { buildGenericResult } from "../src/generic-result.js";
 import { resultKeyboard, starterResultKeyboard } from "../src/navigation-keyboards.js";
@@ -21,7 +21,7 @@ function sections(text) {
   const gain = "🪞🎁 *Вторинна вигода*\n";
   const meaning = "🌟🧭 *Значення в житті*\n";
   const solution = "🔑✨ *Рішення*\n";
-  const read = "🔁 Прочитай це ";
+  const read = "🔁 Прочитай це рішення ";
   const i1 = text.indexOf(state);
   const i2 = text.indexOf(problem);
   const i3 = text.indexOf(gain);
@@ -31,13 +31,11 @@ function sections(text) {
   assert.equal(i1, 0);
   assert.ok(i2 > i1 && i3 > i2 && i4 > i3 && i5 > i4 && i6 > i5);
   const problemBody = text.indexOf("\n", i2) + 1;
-  const meaningBody = i4 + meaning.length;
-  const note = text.indexOf("🛟 *Важлива межа*", meaningBody);
   return {
     state: text.slice(i1 + state.length, i2).trim(),
     problem: text.slice(problemBody, i3).trim(),
     gain: text.slice(i3 + gain.length, i4).trim(),
-    meaning: text.slice(meaningBody, note > -1 && note < i5 ? note : i5).trim(),
+    meaning: text.slice(i4 + meaning.length, i5).trim(),
     solution: text.slice(i5 + solution.length, i6).trim()
   };
 }
@@ -49,7 +47,7 @@ function assertResult(result, label) {
   }
   assert.match(value.state, /^Ти можеш відчувати,/u);
   assert.ok(result.readCount >= 3 && result.readCount <= 9);
-  assert.match(result.text, new RegExp(`Прочитай це ${result.readCount} разів`, "u"));
+  assert.match(result.text, new RegExp(`Прочитай це рішення ${result.readCount} разів`, "u"));
   for (const item of forbidden) assert.ok(!result.text.includes(item), `${label}: ${item}`);
   assert.ok(result.text.length < 4000);
 }
