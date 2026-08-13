@@ -22,6 +22,12 @@ const forbiddenVisible = [
   "*Афірмація*",
   "Хочу рішення про це"
 ];
+const referralPatterns = [
+  /фахів/iu,
+  /лікар/iu,
+  /професійн\w*\s+оцінк/iu,
+  /медичн\w*\s+оцінк/iu
+];
 const legacyPoolLanguage = [
   "Стан зараз виглядає так:",
   "Проблема тут у тому, що",
@@ -101,6 +107,12 @@ function assertContextPool(pool, label) {
   }
 }
 
+function assertNoReferralCopy(text, label) {
+  for (const pattern of referralPatterns) {
+    assert.ok(!pattern.test(text), `${label} must stay self-contained without referral copy: ${pattern}`);
+  }
+}
+
 function assertResult(result, label, expectNext = true) {
   const value = sections(result.text);
   for (const [key, text] of Object.entries(value)) {
@@ -114,6 +126,7 @@ function assertResult(result, label, expectNext = true) {
       assert.ok(!pattern.test(section), `${label} must use definite direct language: ${pattern}`);
     }
   }
+  assertNoReferralCopy(result.text, label);
   assert.ok(result.readCount >= 3 && result.readCount <= 9);
   assert.match(result.text, new RegExp(`Прочитай це рішення ${result.readCount} разів`, "u"));
   for (const item of forbiddenVisible) assert.ok(!result.text.includes(item), `${label}: ${item}`);
@@ -199,4 +212,4 @@ assert.equal(articleSlugs.size, 45);
 assert.equal(starters, 15);
 assert.equal(themePoolItems, 3000);
 assert.equal(contextualVariants, 45000);
-console.log("✅ Context flow: 45 factual problems; 500 level-specific gains + 500 life impacts per problem; direct 3-sentence output");
+console.log("✅ Context flow: self-contained direct copy, 45 factual problems, 45k level-specific gains/life impacts");
