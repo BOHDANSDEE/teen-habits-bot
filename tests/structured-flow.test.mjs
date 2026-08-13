@@ -103,7 +103,7 @@ function assertResult(result, label, expectNext = true) {
   for (const item of forbiddenVisible) assert.ok(!result.text.includes(item), `${label}: ${item}`);
   if (expectNext) {
     assert.ok(result.next, `${label} needs next target`);
-    assert.ok(result.text.includes("➡️ *Далі* Наступний розбір допоможе тобі"), `${label} needs explicit next-step benefit`);
+    assert.ok(result.text.includes("➡️ *Хочеш продовжити?* Наступний розбір допоможе тобі"), `${label} needs explicit next-step benefit`);
   }
   assert.ok(result.text.length < 4000);
 }
