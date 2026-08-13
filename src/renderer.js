@@ -92,7 +92,14 @@ function buildProblem(themeKey, pools, level) {
     .replace(/^Фокус\s*—\s*/u, "")
     .replace(/[.!?…]+$/u, "")
     .trim();
-  return buildThreeSentenceSection(`У цій проблемі важливо ${lowerFirst(focus)}`, tail);
+  const safeTail =
+    themeKey === "apathy"
+      ? [
+          tail[0],
+          "Якщо цей стан тримається довго або сильно заважає повсякденному життю, варто сказати про це дорослому, якому довіряєш, або звернутися до фахівця."
+        ]
+      : tail;
+  return buildThreeSentenceSection(`У цій проблемі важливо ${lowerFirst(focus)}`, safeTail);
 }
 
 function buildSecondaryGain(themeKey, pools) {
@@ -156,10 +163,6 @@ export function buildResult(themeKey, levelKey) {
   const readCount = randomReadCount();
   const next = buildNextSuggestion(themeKey);
   const problemName = cleanLevelName(level.name) || level.articleTitle;
-  const safetyNote =
-    themeKey === "apathy"
-      ? "_Якщо цей стан тримається довго або сильно заважає повсякденному життю, варто сказати про це дорослому, якому довіряєш, або звернутися до фахівця._\n\n"
-      : "";
 
   return {
     themeKey,
@@ -168,7 +171,7 @@ export function buildResult(themeKey, levelKey) {
     articleTitle: level.articleTitle,
     next,
     readCount,
-    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${secondaryGain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n${safetyNote}🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це ${readCount} разів не поспішаючи.`
+    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${secondaryGain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${readCount} разів не поспішаючи.`
   };
 }
 
