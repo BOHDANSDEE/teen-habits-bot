@@ -9,7 +9,14 @@ import { buildContinuation, buildResult } from "../src/renderer.js";
 const PRIMARY = "state_action";
 const themes = ["lazy", "apathy", "procrastination"];
 const pools = ["states", "problems", "secondaryGains", "meanings", "affirmations"];
-const forbidden = ["📖 *Історія", "Коротке опитування", "Що може допомогти далі", "Що спробувати зараз", "*Афірмація*"];
+const forbiddenVisible = [
+  "📖 *Історія",
+  "Коротке опитування",
+  "Що може допомогти далі",
+  "Що спробувати зараз",
+  "*Афірмація*",
+  "Хочу рішення про це"
+];
 const legacyPoolLanguage = [
   "Стан зараз виглядає так:",
   "Проблема тут у тому, що",
@@ -19,6 +26,7 @@ const legacyPoolLanguage = [
   "цей рівень",
   "людина"
 ];
+const softDirectLanguage = ["Ти можеш", "Тобі може", "може бути", "може проявлятися", "може допомагати", "можливо"];
 
 const cleanName = (name = "") => String(name).replace(/^\d+\s*·\s*/u, "").trim();
 const sentenceCount = (text = "") => String(text).trim().split(/(?<=[.!?…])\s+/u).filter(Boolean).length;
@@ -50,8 +58,15 @@ function sections(text) {
 }
 
 function assertDirectPoolItem(poolName, item, label) {
+  const lower = item.toLocaleLowerCase("uk-UA");
   for (const legacy of legacyPoolLanguage) {
-    assert.ok(!item.toLocaleLowerCase("uk-UA").includes(legacy.toLocaleLowerCase("uk-UA")), `${label} leaked legacy language: ${legacy}`);
+    assert.ok(!lower.includes(legacy.toLocaleLowerCase("uk-UA")), `${label} leaked legacy language: ${legacy}`);
+  }
+
+  if (poolName !== "affirmations") {
+    for (const soft of softDirectLanguage) {
+      assert.ok(!lower.includes(soft.toLocaleLowerCase("uk-UA")), `${label} still hedges with: ${soft}`);
+    }
   }
 
   if (poolName === "affirmations") {
@@ -64,10 +79,10 @@ function assertDirectPoolItem(poolName, item, label) {
     return;
   }
 
-  assert.match(item, /(Ти|ти|Тобі|тобі|тебе)/u, `${label} must address the person directly`);
+  assert.match(item, /(Ти|ти|Тобі|тобі|тебе|твоє|твій|твоя)/u, `${label} must address the person directly`);
 }
 
-function assertResult(result, label) {
+function assertResult(result, label, expectNext = true) {
   const value = sections(result.text);
   for (const [key, text] of Object.entries(value)) {
     assert.equal(sentenceCount(text), 3, `${label}.${key} must have 3 sentences`);
@@ -75,9 +90,16 @@ function assertResult(result, label) {
   assert.match(value.state, /(Ти|ти|Тобі|тобі|тебе)/u, `${label}.state must address the person directly`);
   assert.match(value.gain, /(Ти|ти|Тобі|тобі|тебе)/u, `${label}.gain must address the person directly`);
   assert.match(value.meaning, /(Ти|ти|Тобі|тобі|твоєму|твоїх|тебе)/u, `${label}.meaning must address the person directly`);
+  for (const section of [value.state, value.problem, value.gain, value.meaning]) {
+    assert.ok(!/Ти можеш|Тобі може|можливо/iu.test(section), `${label} must use definite direct language`);
+  }
   assert.ok(result.readCount >= 3 && result.readCount <= 9);
   assert.match(result.text, new RegExp(`Прочитай це рішення ${result.readCount} разів`, "u"));
-  for (const item of forbidden) assert.ok(!result.text.includes(item), `${label}: ${item}`);
+  for (const item of forbiddenVisible) assert.ok(!result.text.includes(item), `${label}: ${item}`);
+  if (expectNext) {
+    assert.ok(result.next, `${label} needs next target`);
+    assert.ok(result.text.includes("➡️ *Далі* Наступний розбір допоможе тобі"), `${label} needs explicit next-step benefit`);
+  }
   assert.ok(result.text.length < 4000);
 }
 
@@ -104,15 +126,15 @@ for (const themeKey of themes) {
     assert.equal(target?.blockKey, PRIMARY);
     assert.equal(target?.themeKey, themeKey);
     assert.equal(target?.levelKey, levelKey);
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 8; i += 1) {
       const result = buildResult(themeKey, levelKey);
       assert.ok(result.text.includes(`🧩⚠️ *Проблема — ${cleanName(level.name)}*`));
-      assert.ok(result.next);
       assertResult(result, `${themeKey}.${levelKey}`);
       const keyboard = resultKeyboard(PRIMARY, themeKey, levelKey, 0, result.next);
       const nextButton = buttons(keyboard).find((button) => button.callback_data.startsWith("solution:"));
-      assert.equal(nextButton?.text, "💡 Хочу рішення про це");
+      assert.equal(nextButton?.text, "➡️ Продовжити");
       assert.ok(Buffer.byteLength(nextButton.callback_data, "utf8") <= 64);
+      assert.ok(!buttons(keyboard).some((button) => button.text.includes("Хочу рішення")));
     }
     const continuation = buildContinuation(themeKey);
     assertResult(continuation, `${themeKey}.continuation`);
@@ -126,7 +148,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
     starters += 1;
     const result = buildGenericResult(blockKey, themeKey, levelKey);
     assert.ok(result.text.includes(`🧩⚠️ *Проблема — ${cleanName(level.name)}*`));
-    assertResult(result, `${blockKey}.${themeKey}`);
+    assertResult(result, `${blockKey}.${themeKey}`, false);
     const keyboard = starterResultKeyboard(blockKey, themeKey, 0);
     for (const button of buttons(keyboard)) assert.ok(Buffer.byteLength(button.callback_data, "utf8") <= 64);
   }
@@ -135,4 +157,4 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 assert.equal(articleSlugs.size, 45);
 assert.equal(starters, 15);
 assert.equal(totalPoolItems, 7500);
-console.log("✅ Structured flow: all 7500 active variants use direct-person language; 5 blocks × 3 sentences; random 3–9 reads");
+console.log("✅ Direct flow: 7500 definite-person variants, 5×3-sentence blocks, explicit next benefit, neutral Continue button");
