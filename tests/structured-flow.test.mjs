@@ -2,13 +2,18 @@ import assert from "node:assert/strict";
 import { MAIN_BLOCK } from "../src/content.js";
 import { FUTURE_BLOCKS } from "../src/future-blocks.js";
 import { buildGenericResult } from "../src/generic-result.js";
+import {
+  getLevelLifeMeaningPool,
+  getLevelSecondaryGainPool,
+  getProblemFact
+} from "../src/level-context-pools.js";
 import { resultKeyboard, starterResultKeyboard } from "../src/navigation-keyboards.js";
 import { findLevelByArticleSlug, getAllLevelTargets } from "../src/navigation.js";
 import { buildContinuation, buildResult } from "../src/renderer.js";
 
 const PRIMARY = "state_action";
 const themes = ["lazy", "apathy", "procrastination"];
-const pools = ["states", "problems", "secondaryGains", "meanings", "affirmations"];
+const activeThemePools = ["states", "affirmations"];
 const forbiddenVisible = [
   "📖 *Історія",
   "Коротке опитування",
@@ -85,6 +90,17 @@ function assertDirectPoolItem(poolName, item, label) {
   assert.match(item, directPerson, `${label} must address the person directly`);
 }
 
+function assertContextPool(pool, label) {
+  assert.equal(pool.length, 500, `${label} must contain 500 variants`);
+  assert.equal(new Set(pool).size, 500, `${label} must contain 500 unique variants`);
+  for (const item of pool) {
+    assert.match(item, directPerson, `${label} must address the person directly`);
+    for (const pattern of softDirectPatterns) {
+      assert.ok(!pattern.test(item), `${label} must stay direct: ${pattern}`);
+    }
+  }
+}
+
 function assertResult(result, label, expectNext = true) {
   const value = sections(result.text);
   for (const [key, text] of Object.entries(value)) {
@@ -111,29 +127,43 @@ function assertResult(result, label, expectNext = true) {
 assert.deepEqual(Object.keys(MAIN_BLOCK.subthemes), themes);
 assert.equal(getAllLevelTargets().length, 60);
 
-let totalPoolItems = 0;
+let themePoolItems = 0;
+let contextualVariants = 0;
 const articleSlugs = new Set();
 for (const themeKey of themes) {
   const theme = MAIN_BLOCK.subthemes[themeKey];
   assert.equal(Object.keys(theme.levels).length, 15);
-  for (const poolName of pools) {
+
+  for (const poolName of activeThemePools) {
     const pool = theme.pools[poolName];
     assert.equal(pool.length, 500);
     assert.equal(new Set(pool).size, 500);
     for (let index = 0; index < pool.length; index += 1) {
       assertDirectPoolItem(poolName, pool[index], `${themeKey}.${poolName}[${index}]`);
     }
-    totalPoolItems += 500;
+    themePoolItems += 500;
   }
+
   for (const [levelKey, level] of Object.entries(theme.levels)) {
     articleSlugs.add(level.articleSlug);
     const target = findLevelByArticleSlug(level.articleSlug);
     assert.equal(target?.blockKey, PRIMARY);
     assert.equal(target?.themeKey, themeKey);
     assert.equal(target?.levelKey, levelKey);
+
+    const fact = getProblemFact(themeKey, levelKey);
+    assert.ok(fact, `${themeKey}.${levelKey} needs an objective problem fact`);
+
+    const gainPool = getLevelSecondaryGainPool(themeKey, levelKey);
+    const lifePool = getLevelLifeMeaningPool(themeKey, levelKey);
+    assertContextPool(gainPool, `${themeKey}.${levelKey}.secondaryGain`);
+    assertContextPool(lifePool, `${themeKey}.${levelKey}.lifeMeaning`);
+    contextualVariants += gainPool.length + lifePool.length;
+
     for (let i = 0; i < 8; i += 1) {
       const result = buildResult(themeKey, levelKey);
       assert.ok(result.text.includes(`🧩⚠️ *Проблема — ${cleanName(level.name)}*`));
+      assert.ok(result.text.includes(fact), `${themeKey}.${levelKey} must render its exact factual problem statement`);
       assertResult(result, `${themeKey}.${levelKey}`);
       const keyboard = resultKeyboard(PRIMARY, themeKey, levelKey, 0, result.next);
       const nextButton = buttons(keyboard).find((button) => button.callback_data.startsWith("solution:"));
@@ -145,6 +175,12 @@ for (const themeKey of themes) {
     assertResult(continuation, `${themeKey}.continuation`);
   }
 }
+
+const cleaningGain = getLevelSecondaryGainPool("lazy", "l6").join(" ");
+const cleaningLife = getLevelLifeMeaningPool("lazy", "l6").join(" ");
+assert.match(cleaningGain, /знайомому стані|передбачуваність|звичний порядок/iu, "cleaning gain must include stability/familiarity mechanism");
+assert.match(cleaningLife, /кличеш людей|гост|соціального життя/iu, "cleaning life impact must include social-home consequences");
+assert.match(cleaningLife, /пошук речей|побутові справи|власному просторі/iu, "cleaning life impact must include concrete home consequences");
 
 let starters = 0;
 for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
@@ -161,5 +197,6 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 
 assert.equal(articleSlugs.size, 45);
 assert.equal(starters, 15);
-assert.equal(totalPoolItems, 7500);
-console.log("✅ Direct flow: 7500 definite-person variants, 5×3-sentence blocks, explicit next benefit, neutral Continue button");
+assert.equal(themePoolItems, 3000);
+assert.equal(contextualVariants, 45000);
+console.log("✅ Context flow: 45 factual problems; 500 level-specific gains + 500 life impacts per problem; direct 3-sentence output");
