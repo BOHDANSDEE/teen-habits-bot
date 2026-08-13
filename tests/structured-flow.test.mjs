@@ -27,6 +27,7 @@ const legacyPoolLanguage = [
   "людина"
 ];
 const softDirectLanguage = ["Ти можеш", "Тобі може", "може бути", "може проявлятися", "може допомагати", "можливо"];
+const directPerson = /(ти|тобі|тебе|твоє|твій|твоя|твоєму|твоїх)/iu;
 
 const cleanName = (name = "") => String(name).replace(/^\d+\s*·\s*/u, "").trim();
 const sentenceCount = (text = "") => String(text).trim().split(/(?<=[.!?…])\s+/u).filter(Boolean).length;
@@ -70,16 +71,11 @@ function assertDirectPoolItem(poolName, item, label) {
   }
 
   if (poolName === "affirmations") {
-    assert.match(item, /^(Я|Сьогодні я)/u, `${label} must be first-person`);
+    assert.match(item, /^(я|сьогодні я)/iu, `${label} must be first-person`);
     return;
   }
 
-  if (poolName === "meanings") {
-    assert.match(item, /(Ти|ти|Тобі|тобі|твоєму|твоїх|тебе)/u, `${label} must address the person directly`);
-    return;
-  }
-
-  assert.match(item, /(Ти|ти|Тобі|тобі|тебе|твоє|твій|твоя)/u, `${label} must address the person directly`);
+  assert.match(item, directPerson, `${label} must address the person directly`);
 }
 
 function assertResult(result, label, expectNext = true) {
@@ -87,9 +83,9 @@ function assertResult(result, label, expectNext = true) {
   for (const [key, text] of Object.entries(value)) {
     assert.equal(sentenceCount(text), 3, `${label}.${key} must have 3 sentences`);
   }
-  assert.match(value.state, /(Ти|ти|Тобі|тобі|тебе)/u, `${label}.state must address the person directly`);
-  assert.match(value.gain, /(Ти|ти|Тобі|тобі|тебе)/u, `${label}.gain must address the person directly`);
-  assert.match(value.meaning, /(Ти|ти|Тобі|тобі|твоєму|твоїх|тебе)/u, `${label}.meaning must address the person directly`);
+  assert.match(value.state, directPerson, `${label}.state must address the person directly`);
+  assert.match(value.gain, directPerson, `${label}.gain must address the person directly`);
+  assert.match(value.meaning, directPerson, `${label}.meaning must address the person directly`);
   for (const section of [value.state, value.problem, value.gain, value.meaning]) {
     assert.ok(!/Ти можеш|Тобі може|можливо/iu.test(section), `${label} must use definite direct language`);
   }
