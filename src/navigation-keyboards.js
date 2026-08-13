@@ -124,7 +124,7 @@ export function resultKeyboard(blockKey, themeKey, levelKey, page = 0, next = nu
 
   return {
     inline_keyboard: [
-      [{ text: "💡 Хочу рішення про це", callback_data: solutionCallback }],
+      [{ text: "➡️ Продовжити", callback_data: solutionCallback }],
       [
         {
           text: "🎲 Інший варіант",
