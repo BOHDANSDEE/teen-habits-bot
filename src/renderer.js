@@ -7,14 +7,6 @@ import {
 } from "./content.js";
 import { expandSection } from "./rich-copy.js";
 
-const CORE_COUNT = 25;
-const CORE_PREFIXES = {
-  states: /^Стан зараз виглядає так:\s*/u,
-  secondaryGains: /^Вторинна вигода цього патерну —\s*/u,
-  meanings: /^Значення цього досвіду в житті —\s*/u,
-  affirmations: /^Я обираю\s*/u
-};
-
 const LEVEL_LANGUAGE_REPLACEMENTS = [
   [/У цьому рівні/gu, "У цій ситуації"],
   [/Ключова ознака цього рівня/gu, "Ключова ознака цього стану"],
@@ -71,61 +63,47 @@ function buildThreeSentenceSection(lead, tail = []) {
   return firstThree([ensureSentence(lead), ...tail].filter(Boolean).join(" "));
 }
 
-function pickCore(pool = [], prefix) {
-  const index = Math.floor(Math.random() * CORE_COUNT);
-  return makeUserFacing(String(pool[index] || ""))
-    .replace(prefix, "")
-    .trim();
+function pickDirect(pool = []) {
+  return makeUserFacing(pickRandom(pool));
 }
 
 function buildState(themeKey, pools) {
-  const raw = pools.states[Math.floor(Math.random() * CORE_COUNT)] || pickRandom(pools.states);
-  const core = pickCore(pools.states, CORE_PREFIXES.states);
+  const raw = pickDirect(pools.states);
   const tail = richTail(themeKey, "states", raw);
-  return buildThreeSentenceSection(`Ти можеш відчувати, що ${lowerFirst(core)}`, tail);
+  return buildThreeSentenceSection(raw, tail);
 }
 
 function buildProblem(themeKey, pools, level) {
-  const raw = pickRandom(pools.problems);
+  const raw = pickDirect(pools.problems);
   const tail = richTail(themeKey, "problems", raw);
   const focus = String(level.summary || "")
     .replace(/^Фокус\s*—\s*/u, "")
     .replace(/[.!?…]+$/u, "")
     .trim();
-  const safeTail =
+  const lead = `У цій проблемі для тебе важливо ${lowerFirst(focus)}`;
+  const third =
     themeKey === "apathy"
-      ? [
-          tail[0],
-          "Якщо цей стан тримається довго або сильно заважає повсякденному життю, варто сказати про це дорослому, якому довіряєш, або звернутися до фахівця."
-        ]
-      : tail;
-  return buildThreeSentenceSection(`У цій проблемі важливо ${lowerFirst(focus)}`, safeTail);
+      ? "Якщо цей стан тримається довго або сильно заважає повсякденному життю, варто сказати про це дорослому, якому довіряєш, або звернутися до фахівця."
+      : tail[0];
+  return buildThreeSentenceSection(lead, [raw, third]);
 }
 
 function buildSecondaryGain(themeKey, pools) {
-  const raw = pools.secondaryGains[Math.floor(Math.random() * CORE_COUNT)] || pickRandom(pools.secondaryGains);
-  const core = pickCore(pools.secondaryGains, CORE_PREFIXES.secondaryGains);
+  const raw = pickDirect(pools.secondaryGains);
   const tail = richTail(themeKey, "secondaryGains", raw);
-  return buildThreeSentenceSection(
-    `Тобі може бути по-своєму вигідно залишатися в цьому сценарії, бо він дозволяє ${lowerFirst(core)}`,
-    tail
-  );
+  return buildThreeSentenceSection(raw, tail);
 }
 
 function buildMeaning(themeKey, pools) {
-  const raw = pools.meanings[Math.floor(Math.random() * CORE_COUNT)] || pickRandom(pools.meanings);
-  const core = pickCore(pools.meanings, CORE_PREFIXES.meanings);
+  const raw = pickDirect(pools.meanings);
   const tail = richTail(themeKey, "meanings", raw);
-  return buildThreeSentenceSection(
-    `У житті ця тема проявляється через те, як ти вчишся ${lowerFirst(core)}`,
-    tail
-  );
+  return buildThreeSentenceSection(raw, tail);
 }
 
 function buildSolution(themeKey, pools) {
-  const raw = pools.affirmations[Math.floor(Math.random() * CORE_COUNT)] || pickRandom(pools.affirmations);
-  const expanded = makeUserFacing(expandSection(themeKey, "affirmations", raw));
-  return firstThree(expanded);
+  const raw = pickDirect(pools.affirmations);
+  const tail = richTail(themeKey, "affirmations", raw);
+  return buildThreeSentenceSection(raw, tail);
 }
 
 function buildNextSuggestion(currentThemeKey) {
