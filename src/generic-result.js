@@ -54,7 +54,9 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
   const problem = [
     firstSentence(level.problem),
     "Саме ця точка найчастіше підтримує обраний сценарій і не дає йому змінитися сам по собі.",
-    "Коли вона повторюється, проблема починає впливати не лише на один момент, а й на звичний спосіб дії."
+    level.note
+      ? firstSentence(level.note)
+      : "Коли вона повторюється, проблема починає впливати не лише на один момент, а й на звичний спосіб дії."
   ].join(" ");
   const secondaryGain = [
     firstSentence(`Тобі може бути по-своєму вигідно залишатися в цьому сценарії, тому що ${level.secondaryGain}`),
@@ -71,7 +73,6 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
     "Я дозволяю собі закріплювати це рішення поступово, без вимоги змінитися за один день.",
     "Я повертаюся до цієї думки щоразу, коли старий сценарій знову стає автоматичним."
   ].join(" ");
-  const note = level.note ? `\n\n🛟 *Важлива межа*\n${level.note}` : "";
 
   return {
     blockKey,
@@ -80,6 +81,6 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
     readCount,
-    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${secondaryGain}\n\n🌟🧭 *Значення в житті*\n${meaning}${note}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це ${readCount} разів не поспішаючи.`
+    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${secondaryGain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${readCount} разів не поспішаючи.`
   };
 }
