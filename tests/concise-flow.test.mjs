@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { BODY_STATE_POOLS } from "../src/body-state-pools.js";
 import { MAIN_BLOCK } from "../src/content.js";
 import { getLevelLifeMeaningPool, getLevelSecondaryGainPool } from "../src/level-context-pools.js";
+import { buildPlainSecondaryGain } from "../src/plain-secondary-gain.js";
 import { getLevelProblemPool } from "../src/problem-pools.js";
 import { buildResult } from "../src/renderer.js";
 
@@ -14,11 +15,13 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
   for (const [levelKey] of Object.entries(theme.levels)) {
     const problems = getLevelProblemPool(themeKey, levelKey);
     const gains = getLevelSecondaryGainPool(themeKey, levelKey);
+    const plainGains = gains.map(buildPlainSecondaryGain);
     const meanings = getLevelLifeMeaningPool(themeKey, levelKey);
     assert.equal(problems.length, 500);
     assert.equal(new Set(problems).size, 500);
     assert.equal(gains.length, 500);
     assert.equal(new Set(gains).size, 500);
+    assert.equal(new Set(plainGains).size, 500);
     assert.equal(meanings.length, 500);
     assert.equal(new Set(meanings).size, 500);
 
@@ -30,7 +33,8 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
     assert.ok(result.text.includes("🔑✨ *Рішення*"));
     assert.ok(result.text.includes("✨ *Результат*"));
     assert.ok(!result.text.includes("✨ *Тепер ти відчуваєш*"));
-    assert.ok(!/сценарій|патерн|механізм|внутрішня система/iu.test(result.text.split("🪞🎁 *Вторинна вигода*")[1].split("🌟🧭")[0]));
+    const gain = result.text.split("🪞🎁 *Вторинна вигода*")[1].split("🌟🧭")[0];
+    assert.ok(!/сценарій|патерн|механізм|внутрішня система/iu.test(gain));
     assert.ok(result.text.length < 2800);
   }
 }
