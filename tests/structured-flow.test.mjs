@@ -10,6 +10,15 @@ const PRIMARY = "state_action";
 const themes = ["lazy", "apathy", "procrastination"];
 const pools = ["states", "problems", "secondaryGains", "meanings", "affirmations"];
 const forbidden = ["📖 *Історія", "Коротке опитування", "Що може допомогти далі", "Що спробувати зараз", "*Афірмація*"];
+const legacyPoolLanguage = [
+  "Стан зараз виглядає так:",
+  "Проблема тут у тому, що",
+  "Вторинна вигода цього патерну —",
+  "Значення цього досвіду в житті —",
+  "У цьому рівні",
+  "цей рівень",
+  "людина"
+];
 
 const cleanName = (name = "") => String(name).replace(/^\d+\s*·\s*/u, "").trim();
 const sentenceCount = (text = "") => String(text).trim().split(/(?<=[.!?…])\s+/u).filter(Boolean).length;
@@ -40,12 +49,32 @@ function sections(text) {
   };
 }
 
+function assertDirectPoolItem(poolName, item, label) {
+  for (const legacy of legacyPoolLanguage) {
+    assert.ok(!item.toLocaleLowerCase("uk-UA").includes(legacy.toLocaleLowerCase("uk-UA")), `${label} leaked legacy language: ${legacy}`);
+  }
+
+  if (poolName === "affirmations") {
+    assert.match(item, /^(Я\b|Сьогодні я\b)/u, `${label} must be first-person`);
+    return;
+  }
+
+  if (poolName === "meanings") {
+    assert.match(item, /\b(Ти|ти|Тобі|тобі|твоєму|твоїх|тебе)\b/u, `${label} must address the person directly`);
+    return;
+  }
+
+  assert.match(item, /\b(Ти|ти|Тобі|тобі|тебе)\b/u, `${label} must address the person directly`);
+}
+
 function assertResult(result, label) {
   const value = sections(result.text);
   for (const [key, text] of Object.entries(value)) {
     assert.equal(sentenceCount(text), 3, `${label}.${key} must have 3 sentences`);
   }
-  assert.match(value.state, /^Ти можеш відчувати,/u);
+  assert.match(value.state, /\b(Ти|ти|Тобі|тобі|тебе)\b/u, `${label}.state must address the person directly`);
+  assert.match(value.gain, /\b(Ти|ти|Тобі|тобі|тебе)\b/u, `${label}.gain must address the person directly`);
+  assert.match(value.meaning, /\b(Ти|ти|Тобі|тобі|твоєму|твоїх|тебе)\b/u, `${label}.meaning must address the person directly`);
   assert.ok(result.readCount >= 3 && result.readCount <= 9);
   assert.match(result.text, new RegExp(`Прочитай це рішення ${result.readCount} разів`, "u"));
   for (const item of forbidden) assert.ok(!result.text.includes(item), `${label}: ${item}`);
@@ -61,8 +90,12 @@ for (const themeKey of themes) {
   const theme = MAIN_BLOCK.subthemes[themeKey];
   assert.equal(Object.keys(theme.levels).length, 15);
   for (const poolName of pools) {
-    assert.equal(theme.pools[poolName].length, 500);
-    assert.equal(new Set(theme.pools[poolName]).size, 500);
+    const pool = theme.pools[poolName];
+    assert.equal(pool.length, 500);
+    assert.equal(new Set(pool).size, 500);
+    for (let index = 0; index < pool.length; index += 1) {
+      assertDirectPoolItem(poolName, pool[index], `${themeKey}.${poolName}[${index}]`);
+    }
     totalPoolItems += 500;
   }
   for (const [levelKey, level] of Object.entries(theme.levels)) {
@@ -102,4 +135,4 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 assert.equal(articleSlugs.size, 45);
 assert.equal(starters, 15);
 assert.equal(totalPoolItems, 7500);
-console.log("✅ Structured flow: 5 blocks × 3 sentences, random 3–9 reads, no stories/quizzes");
+console.log("✅ Structured flow: all 7500 active variants use direct-person language; 5 blocks × 3 sentences; random 3–9 reads");
