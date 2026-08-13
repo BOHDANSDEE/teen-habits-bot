@@ -22,6 +22,7 @@ jobs:
       - run: node --check src/levels-45.js
       - run: node --check src/content.js
       - run: node --check src/pools.js
+      - run: node --check src/direct-pools.js
       - run: node --check src/renderer.js
       - run: node --check src/generic-result.js
       - run: node --check src/navigation-keyboards.js
