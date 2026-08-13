@@ -1,4 +1,5 @@
 import { getBlock, getBlockSubtheme } from "./navigation.js";
+import { buildPlainSecondaryGain } from "./plain-secondary-gain.js";
 
 const REFERRAL = /фахів|лікар|професійн\w*\s+оцінк|медичн\w*\s+оцінк/iu;
 
@@ -27,7 +28,7 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
   const problemName = cleanName(level.name) || level.articleTitle;
   const state = `Ти відчуваєш, що ${lower(firstSentence(level.state, "ця тема зараз впливає на твій стан"))}. Найсильніше це помітно саме тоді, коли потрібно діяти.`;
   const problem = `Тобі заважає те, що ${lower(firstSentence(level.problem, "цей сценарій заважає потрібній зміні"))}. Через це старий сценарій повторюється замість нового вибору.`;
-  const gain = `Тобі це дає коротку вигоду: ${lower(firstSentence(level.secondaryGain, "цей сценарій дає коротке полегшення"))}. На короткий час напруга спадає, тому реакція легко закріплюється.`;
+  const gain = buildPlainSecondaryGain(firstSentence(level.secondaryGain, "не витрачати сили на зміни прямо зараз"));
   const meaning = `У житті це проявляється так: ${lower(firstSentence(level.meaning, "ця тема впливає на твої щоденні рішення"))}. З часом це впливає на твої звички й вибір.`;
   const solution = `${firstSentence(level.affirmation, "Я обираю один конкретний крок і роблю його зараз.")} Сьогодні я підтверджую це рішення одним конкретним кроком.`;
   const afterState = "Ти відчуваєш більше ясності й контролю щодо наступного кроку. Напруга стає слабшою, а дія — зрозумілішою.";
