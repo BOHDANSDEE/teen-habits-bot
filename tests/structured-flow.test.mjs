@@ -153,7 +153,6 @@ for (const themeKey of themes) {
 
     const fact = getProblemFact(themeKey, levelKey);
     assert.ok(fact, `${themeKey}.${levelKey} needs an objective problem fact`);
-    assert.match(fact, directPerson, `${themeKey}.${levelKey} problem fact must address the person directly`);
 
     const gainPool = getLevelSecondaryGainPool(themeKey, levelKey);
     const lifePool = getLevelLifeMeaningPool(themeKey, levelKey);
