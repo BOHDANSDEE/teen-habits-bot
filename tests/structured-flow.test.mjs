@@ -26,7 +26,14 @@ const legacyPoolLanguage = [
   "цей рівень",
   "людина"
 ];
-const softDirectLanguage = ["Ти можеш", "Тобі може", "може бути", "може проявлятися", "може допомагати", "можливо"];
+const softDirectPatterns = [
+  /Ти можеш/iu,
+  /Тобі може/iu,
+  /може бути/iu,
+  /може проявлятися/iu,
+  /може допомагати/iu,
+  /(?<!\p{L})можливо(?!\p{L})/iu
+];
 const directPerson = /(ти|тобі|тебе|твоє|твій|твоя|твоєму|твоїх)/iu;
 
 const cleanName = (name = "") => String(name).replace(/^\d+\s*·\s*/u, "").trim();
@@ -65,8 +72,8 @@ function assertDirectPoolItem(poolName, item, label) {
   }
 
   if (poolName !== "affirmations") {
-    for (const soft of softDirectLanguage) {
-      assert.ok(!lower.includes(soft.toLocaleLowerCase("uk-UA")), `${label} still hedges with: ${soft}`);
+    for (const pattern of softDirectPatterns) {
+      assert.ok(!pattern.test(item), `${label} still uses soft direct language: ${pattern}`);
     }
   }
 
@@ -87,7 +94,9 @@ function assertResult(result, label, expectNext = true) {
   assert.match(value.gain, directPerson, `${label}.gain must address the person directly`);
   assert.match(value.meaning, directPerson, `${label}.meaning must address the person directly`);
   for (const section of [value.state, value.problem, value.gain, value.meaning]) {
-    assert.ok(!/Ти можеш|Тобі може|можливо/iu.test(section), `${label} must use definite direct language`);
+    for (const pattern of softDirectPatterns) {
+      assert.ok(!pattern.test(section), `${label} must use definite direct language: ${pattern}`);
+    }
   }
   assert.ok(result.readCount >= 3 && result.readCount <= 9);
   assert.match(result.text, new RegExp(`Прочитай це рішення ${result.readCount} разів`, "u"));
