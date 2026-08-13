@@ -1,5 +1,7 @@
 import { getBlock, getBlockSubtheme } from "./navigation.js";
 
+const REFERRAL_PATTERN = /фахів|лікар|професійн\w*\s+оцінк|медичн\w*\s+оцінк/iu;
+
 function splitSentences(text = "") {
   return String(text || "")
     .trim()
@@ -16,6 +18,11 @@ function ensureSentence(text = "") {
 
 function firstSentence(text = "") {
   return ensureSentence(splitSentences(text)[0] || text);
+}
+
+function safeFirstSentence(text = "", fallback = "") {
+  const value = firstSentence(text);
+  return REFERRAL_PATTERN.test(value) ? ensureSentence(fallback) : value;
 }
 
 function makeDefinite(text = "") {
@@ -45,8 +52,8 @@ function makeDefinite(text = "") {
     .trim();
 }
 
-function sentenceCore(text = "") {
-  return makeDefinite(String(firstSentence(text)).replace(/[.!?…]+$/u, "").trim());
+function sentenceCore(text = "", fallback = "") {
+  return makeDefinite(String(safeFirstSentence(text, fallback)).replace(/[.!?…]+$/u, "").trim());
 }
 
 function lowerFirst(text = "") {
@@ -72,29 +79,27 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
   const readCount = randomReadCount();
   const problemName = cleanLevelName(level.name) || level.articleTitle;
   const state = [
-    ensureSentence(`Ти відчуваєш, що ${lowerFirst(sentenceCore(level.state))}`),
+    ensureSentence(`Ти відчуваєш, що ${lowerFirst(sentenceCore(level.state, "ця тема зараз помітно впливає на твій стан"))}`),
     "Це впливає на твою увагу, енергію та спосіб реагувати в цій темі.",
     "Ти помічаєш цей стан найсильніше саме в моментах, де потрібен новий вибір."
   ].join(" ");
   const problem = [
-    ensureSentence(`Тобі заважає те, що ${lowerFirst(sentenceCore(level.problem))}`),
+    ensureSentence(`Тобі заважає те, що ${lowerFirst(sentenceCore(level.problem, "цей сценарій повторюється й заважає потрібній зміні"))}`),
     "Це призводить до повторення того самого сценарію й забирає простір для іншої реакції.",
-    level.note
-      ? firstSentence(level.note)
-      : "Коли це повторюється, проблема переходить з одного моменту у звичний спосіб дії."
+    "Коли це повторюється, проблема переходить з одного моменту у звичний спосіб дії."
   ].join(" ");
   const secondaryGain = [
-    ensureSentence(`Тобі по-своєму вигідно залишатися в цьому сценарії, тому що ${lowerFirst(sentenceCore(level.secondaryGain))}`),
+    ensureSentence(`Тобі по-своєму вигідно залишатися в цьому сценарії, тому що ${lowerFirst(sentenceCore(level.secondaryGain, "він дає коротке полегшення й не вимагає змін прямо зараз"))}`),
     "Так ти отримуєш коротке полегшення й залишаєшся в знайомій реакції.",
     "Саме ця коротка вигода пояснює, чому старий сценарій тримається навіть тоді, коли вже шкодить."
   ].join(" ");
   const meaning = [
-    ensureSentence(`У твоєму житті ця тема проявляється так: ${lowerFirst(sentenceCore(level.meaning))}`),
+    ensureSentence(`У твоєму житті ця тема проявляється так: ${lowerFirst(sentenceCore(level.meaning, "вона впливає на твої щоденні рішення й звичний ритм"))}`),
     "Це видно у твоїх рішеннях, звичках, ставленні до себе та реакціях у схожих ситуаціях.",
     "Коли ти бачиш цей зв’язок, ти точніше розумієш, що саме змінювати."
   ].join(" ");
   const solution = [
-    firstSentence(level.affirmation),
+    safeFirstSentence(level.affirmation, "Я обираю діяти ясніше й підтримувати зміни конкретними кроками."),
     "Я закріплюю це рішення поступово й без вимоги змінити все за один день.",
     "Я повертаюся до цієї думки щоразу, коли старий сценарій знову стає автоматичним."
   ].join(" ");
