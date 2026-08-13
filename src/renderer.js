@@ -64,14 +64,24 @@ function pickDirect(pool = []) {
   return ensureSentence(pickRandom(pool));
 }
 
-function pickUnique(pool = [], count = 3) {
-  const copy = [...new Set(pool)];
-  const result = [];
-  while (copy.length && result.length < count) {
-    const index = Math.floor(Math.random() * copy.length);
-    result.push(copy.splice(index, 1)[0]);
+function shuffle(items = []) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-  return result;
+  return copy;
+}
+
+function pickContextTriplet(pool = []) {
+  if (pool.length !== 500) return shuffle([...new Set(pool)]).slice(0, 3);
+  const tagGroups = shuffle([0, 1, 2, 3, 4]).slice(0, 3);
+  return tagGroups.map((tagGroup) => {
+    const frameIndex = Math.floor(Math.random() * 20);
+    const variantIndex = Math.floor(Math.random() * 5);
+    const coreIndex = tagGroup * 5 + variantIndex;
+    return pool[frameIndex * 25 + coreIndex];
+  });
 }
 
 function threeSentences(first, tail = []) {
@@ -98,12 +108,12 @@ function buildProblem(themeKey, levelKey, level) {
 
 function buildSecondaryGain(themeKey, levelKey) {
   const pool = getLevelSecondaryGainPool(themeKey, levelKey);
-  return pickUnique(pool, 3).map(ensureSentence).join(" ");
+  return pickContextTriplet(pool).map(ensureSentence).join(" ");
 }
 
 function buildMeaning(themeKey, levelKey) {
   const pool = getLevelLifeMeaningPool(themeKey, levelKey);
-  return pickUnique(pool, 3).map(ensureSentence).join(" ");
+  return pickContextTriplet(pool).map(ensureSentence).join(" ");
 }
 
 function buildSolution(themeKey, pools) {
