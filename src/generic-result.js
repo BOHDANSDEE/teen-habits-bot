@@ -1,1 +1,1 @@
-export { buildGenericResult } from "./concise-generic-result.js";
+export { buildGenericResult } from "./balanced-generic-result.js";

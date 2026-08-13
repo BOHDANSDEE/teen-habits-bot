@@ -57,17 +57,18 @@ function sections(text) {
   };
 }
 
-function assertConcise(result, label, expectNext) {
+function assertBalanced(result, label, expectNext) {
   const value = sections(result.text);
   for (const [name, text] of Object.entries(value)) {
-    assert.equal(sentenceCount(text), 1, `${label}.${name} must be exactly one sentence`);
-    assert.ok(text.length <= 340, `${label}.${name} is too long`);
+    const count = sentenceCount(text);
+    assert.ok(count >= 2 && count <= 3, `${label}.${name} must have 2-3 sentences, got ${count}`);
+    assert.ok(text.length <= 620, `${label}.${name} is too long`);
   }
   assert.match(value.state, directPerson);
   assert.match(value.after, directPerson);
   assert.ok(!referral.test(result.text), `${label} contains referral copy`);
   assert.ok(result.readCount >= 3 && result.readCount <= 9);
-  assert.ok(result.text.length < 1800, `${label} must stay compact`);
+  assert.ok(result.text.length < 2800, `${label} must stay compact`);
   for (const item of forbidden) assert.ok(!result.text.includes(item), `${label} leaked ${item}`);
   assert.ok(result.text.indexOf("🔑✨ *Рішення*") < result.text.indexOf("✨ *Тепер ти відчуваєш*"));
   if (expectNext) assert.ok(result.next, `${label} must keep next target for button navigation`);
@@ -100,8 +101,10 @@ for (const themeKey of themes) {
 
     const result = buildResult(themeKey, levelKey);
     assert.ok(result.text.includes(`🧩⚠️ *Проблема — ${String(level.name).replace(/^\d+\s*·\s*/u, "").trim()}*`));
-    assert.ok(afterPool.includes(result.afterState));
-    assertConcise(result, `${themeKey}.${levelKey}`, true);
+    assert.equal(result.afterStates.length, 2);
+    assert.notEqual(result.afterStates[0], result.afterStates[1]);
+    for (const item of result.afterStates) assert.ok(afterPool.includes(item));
+    assertBalanced(result, `${themeKey}.${levelKey}`, true);
 
     const keyboard = resultKeyboard(PRIMARY, themeKey, levelKey, 0, result.next);
     const nextButton = keyboard.inline_keyboard.flat().find((button) => button.callback_data.startsWith("solution:"));
@@ -109,7 +112,7 @@ for (const themeKey of themes) {
     assert.ok(Buffer.byteLength(nextButton.callback_data, "utf8") <= 64);
   }
 
-  assertConcise(buildContinuation(themeKey), `${themeKey}.continuation`, true);
+  assertBalanced(buildContinuation(themeKey), `${themeKey}.continuation`, true);
 }
 
 let starterCount = 0;
@@ -117,10 +120,10 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
   for (const [themeKey, theme] of Object.entries(block.subthemes)) {
     const [[levelKey]] = Object.entries(theme.levels);
     const result = buildGenericResult(blockKey, themeKey, levelKey);
-    assertConcise(result, `${blockKey}.${themeKey}`, false);
+    assertBalanced(result, `${blockKey}.${themeKey}`, false);
     starterCount += 1;
   }
 }
 
 assert.equal(starterCount, 15);
-console.log("✅ Concise flow: one sentence per block + 500 after-state variants per main theme");
+console.log("✅ Balanced flow: 2-3 concise sentences per block + 500 after-state variants per main theme");
