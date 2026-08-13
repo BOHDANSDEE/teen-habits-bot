@@ -2,34 +2,18 @@ import assert from "node:assert/strict";
 import { MAIN_BLOCK, getLevel, getRandomLevelKey } from "../src/content.js";
 import { FUTURE_BLOCKS } from "../src/future-blocks.js";
 import { buildGenericResult } from "../src/generic-result.js";
-import {
-  EXPERIENCE_MODES,
-  EXPERIENCE_POOLS,
-  EXPERIENCES_PER_MODE
-} from "../src/experience-pools.js";
-import {
-  resultKeyboard,
-  starterResultKeyboard
-} from "../src/navigation-keyboards.js";
-import {
-  findLevelByArticleSlug,
-  getAllLevelTargets
-} from "../src/navigation.js";
+import { resultKeyboard, starterResultKeyboard } from "../src/navigation-keyboards.js";
+import { findLevelByArticleSlug, getAllLevelTargets } from "../src/navigation.js";
 import { buildContinuation, buildResult } from "../src/renderer.js";
 
 const PRIMARY_BLOCK_KEY = "state_action";
 const themes = ["lazy", "apathy", "procrastination"];
-const oldPoolNames = ["states", "problems", "secondaryGains", "meanings", "affirmations"];
-const modeStarts = {
-  mirror: /^🪞|^🧠|^🌿|^🎯|^💭|^🧭|^⚡|^🔎|^🌤️|^🪴|^🧩|^🚦|^🌊|^🔑/u,
-  quiz: /^🧩 \*Коротке опитування про тебе\*/u,
-  story: /^📖 \*Історія/u
-};
-const oldVisibleSections = [
-  "🌿🧠 *Стан*",
-  "🧩⚠️ *Що заважає*",
-  "🪞🎁 *Що тримає цей сценарій*",
-  "🌟🧭 *Навіщо це змінювати*",
+const poolNames = ["states", "problems", "secondaryGains", "meanings", "affirmations"];
+const forbiddenVisibleFormats = [
+  "📖 *Історія",
+  "🧩 *Коротке опитування про тебе*",
+  "🧭💡 *Що може допомогти далі*",
+  "🚀✅ *Що спробувати зараз*",
   "*Афірмація*"
 ];
 
@@ -43,55 +27,78 @@ function assertCallbackSizes(keyboard) {
   }
 }
 
+function sentenceCount(text = "") {
+  return String(text || "")
+    .trim()
+    .split(/(?<=[.!?…])\s+/u)
+    .map((part) => part.trim())
+    .filter(Boolean).length;
+}
+
+function extractMainSections(text) {
+  const stateStart = "🌿🧠 *Стан*\n";
+  const problemHeader = "🧩⚠️ *Проблема — ";
+  const secondaryStart = "🪞🎁 *Вторинна вигода*\n";
+  const meaningStart = "🌟🧭 *Значення в житті*\n";
+  const solutionStart = "🔑✨ *Рішення*\n";
+  const readStart = "🔁 Прочитай це ";
+
+  const stateIndex = text.indexOf(stateStart);
+  const problemIndex = text.indexOf(problemHeader);
+  const secondaryIndex = text.indexOf(secondaryStart);
+  const meaningIndex = text.indexOf(meaningStart);
+  const solutionIndex = text.indexOf(solutionStart);
+  const readIndex = text.indexOf(readStart);
+
+  assert.ok(stateIndex === 0, "result must begin with Стан");
+  assert.ok(problemIndex > stateIndex, "problem must follow state");
+  assert.ok(secondaryIndex > problemIndex, "secondary gain must follow problem");
+  assert.ok(meaningIndex > secondaryIndex, "meaning must follow secondary gain");
+  assert.ok(solutionIndex > meaningIndex, "solution must follow meaning");
+  assert.ok(readIndex > solutionIndex, "read count must follow solution");
+
+  const problemBodyStart = text.indexOf("\n", problemIndex) + 1;
+  const meaningBodyStart = meaningIndex + meaningStart.length;
+  let meaningEnd = solutionIndex;
+  const safetyIndex = text.indexOf("🛟 *Важлива межа*", meaningBodyStart);
+  if (safetyIndex > -1 && safetyIndex < solutionIndex) meaningEnd = safetyIndex;
+
+  return {
+    state: text.slice(stateIndex + stateStart.length, problemIndex).trim(),
+    problem: text.slice(problemBodyStart, secondaryIndex).trim(),
+    secondaryGain: text.slice(secondaryIndex + secondaryStart.length, meaningIndex).trim(),
+    meaning: text.slice(meaningBodyStart, meaningEnd).trim(),
+    solution: text.slice(solutionIndex + solutionStart.length, readIndex).trim()
+  };
+}
+
+function assertThreeSentenceStructure(result, label) {
+  const sections = extractMainSections(result.text);
+  assert.equal(sentenceCount(sections.state), 3, `${label} state must have 3 sentences`);
+  assert.equal(sentenceCount(sections.problem), 3, `${label} problem must have 3 sentences`);
+  assert.equal(sentenceCount(sections.secondaryGain), 3, `${label} secondary gain must have 3 sentences`);
+  assert.equal(sentenceCount(sections.meaning), 3, `${label} meaning must have 3 sentences`);
+  assert.equal(sentenceCount(sections.solution), 3, `${label} solution must have 3 sentences`);
+  assert.match(sections.state, /^Ти можеш відчувати,/u, `${label} state must speak to the person directly`);
+}
+
 assert.deepEqual(Object.keys(MAIN_BLOCK.subthemes), themes);
-assert.deepEqual(EXPERIENCE_MODES, ["mirror", "quiz", "story"]);
-assert.equal(EXPERIENCES_PER_MODE, 350);
 assert.equal(getAllLevelTargets().length, 60, "45 mature + 15 starter situations must remain discoverable");
 
-let oldPoolTotal = 0;
-let experienceTotal = 0;
+let poolTotal = 0;
 const articleSlugs = new Set();
+const seenReadCounts = new Set();
 
 for (const themeKey of themes) {
   const theme = MAIN_BLOCK.subthemes[themeKey];
   const levelKeys = Object.keys(theme.levels);
   assert.equal(levelKeys.length, 15, `${themeKey} must keep 15 article situations`);
 
-  for (const poolName of oldPoolNames) {
+  for (const poolName of poolNames) {
     const pool = theme.pools[poolName];
-    assert.equal(pool.length, 500, `${themeKey}.${poolName} keeps the 500-item semantic source pool`);
-    assert.equal(new Set(pool).size, 500, `${themeKey}.${poolName} source pool stays unique`);
-    oldPoolTotal += pool.length;
-  }
-
-  const experiencePools = EXPERIENCE_POOLS[themeKey];
-  assert.ok(experiencePools, `${themeKey} must have user-facing experience pools`);
-
-  for (const mode of EXPERIENCE_MODES) {
-    const pool = experiencePools[mode];
-    assert.equal(pool.length, 350, `${themeKey}.${mode} must contain exactly 350 experiences`);
-    assert.equal(
-      new Set(pool.map((item) => item.text)).size,
-      350,
-      `${themeKey}.${mode} must contain 350 unique rendered texts`
-    );
-    assert.ok(pool.every((item) => item.solution), `${themeKey}.${mode} every experience needs a solution`);
-
-    if (mode === "mirror") {
-      assert.ok(pool.every((item) => item.text.includes("Ти відчуваєш")));
-    }
-    if (mode === "quiz") {
-      for (const item of pool) {
-        for (const marker of ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "• А.", "• Б.", "• В.", "• Г."]) {
-          assert.ok(item.text.includes(marker), `${themeKey}.quiz is missing ${marker}`);
-        }
-      }
-    }
-    if (mode === "story") {
-      assert.ok(pool.every((item) => /Сенс/u.test(item.text)), `${themeKey}.story must carry an explicit meaning`);
-    }
-
-    experienceTotal += pool.length;
+    assert.equal(pool.length, 500, `${themeKey}.${poolName} keeps 500 semantic variants`);
+    assert.equal(new Set(pool).size, 500, `${themeKey}.${poolName} variants stay unique`);
+    poolTotal += pool.length;
   }
 
   for (const levelKey of levelKeys) {
@@ -99,7 +106,6 @@ for (const themeKey of themes) {
     assert.ok(level?.articleSlug);
     assert.ok(level?.articleTitle);
     assert.ok(level?.summary);
-    assert.equal(level.actions?.length, 3);
     assert.ok(!articleSlugs.has(level.articleSlug), `duplicate article slug: ${level.articleSlug}`);
     articleSlugs.add(level.articleSlug);
 
@@ -108,42 +114,39 @@ for (const themeKey of themes) {
     assert.equal(deepLinkTarget?.themeKey, themeKey);
     assert.equal(deepLinkTarget?.levelKey, levelKey);
 
-    for (const mode of EXPERIENCE_MODES) {
-      for (let sample = 0; sample < 8; sample += 1) {
-        const result = buildResult(themeKey, levelKey, mode);
-        assert.ok(result, `${themeKey}.${levelKey}.${mode} must render`);
-        assert.equal(result.mode, mode);
-        assert.equal(result.articleSlug, level.articleSlug);
-        assert.match(result.text, modeStarts[mode], `${mode} must visibly look like its format`);
-        assert.ok(result.text.includes(level.summary), "selected article focus must remain visible");
-        assert.ok(result.text.includes("🚀✅ *Що спробувати зараз*"));
-        assert.ok(result.text.includes("🔑✨ *Рішення*"));
-        assert.ok(result.text.includes("🧭💡 *Що може допомогти далі*"));
-        assert.ok(result.text.includes("1️⃣"));
-        assert.ok(result.text.includes("2️⃣"));
-        assert.ok(result.text.includes("3️⃣"));
-        assert.ok(result.next, "every mature result needs a concrete next suggestion");
-        assert.notEqual(result.next.themeKey, themeKey, "next suggestion must switch theme");
-        assert.ok(MAIN_BLOCK.subthemes[result.next.themeKey].levels[result.next.levelKey]);
-        assert.ok(result.text.includes(result.next.articleTitle));
-        assert.ok(result.text.includes(result.next.summary));
+    for (let sample = 0; sample < 12; sample += 1) {
+      const result = buildResult(themeKey, levelKey);
+      assert.ok(result, `${themeKey}.${levelKey} must render`);
+      assert.equal(result.articleSlug, level.articleSlug);
+      assert.ok(result.next, "next target remains available for the button");
+      assert.notEqual(result.next.themeKey, themeKey, "next target must switch theme");
+      assert.ok(result.readCount >= 3 && result.readCount <= 9, "readCount must stay in 3..9");
+      seenReadCounts.add(result.readCount);
+      assert.match(result.text, new RegExp(`🔁 Прочитай це ${result.readCount} разів`, "u"));
+      assert.ok(result.text.includes(`🧩⚠️ *Проблема — ${level.name.replace(/^\\d+\\s*·\\s*/u, "")}*`));
 
-        const solutionIndex = result.text.lastIndexOf("🔑✨ *Рішення*");
-        const nextIndex = result.text.lastIndexOf("🧭💡 *Що може допомогти далі*");
-        assert.ok(solutionIndex > nextIndex, "solution must be the final content section");
-
-        for (const oldSection of oldVisibleSections) {
-          assert.ok(!result.text.includes(oldSection), `old rigid section leaked into ${mode}: ${oldSection}`);
-        }
-
-        assert.ok(result.text.length < 4000, `${themeKey}.${levelKey}.${mode} must stay under Telegram limit`);
-
-        const keyboard = resultKeyboard(PRIMARY_BLOCK_KEY, themeKey, levelKey, 0, result.next);
-        const solutionButton = buttons(keyboard).find((button) => button.callback_data.startsWith("solution:"));
-        assert.equal(solutionButton?.text, "💡 Хочу рішення про це");
-        assert.equal(solutionButton?.callback_data, `solution:${result.next.themeKey}:${result.next.levelKey}`);
-        assertCallbackSizes(keyboard);
+      for (const marker of [
+        "🌿🧠 *Стан*",
+        "🧩⚠️ *Проблема —",
+        "🪞🎁 *Вторинна вигода*",
+        "🌟🧭 *Значення в житті*",
+        "🔑✨ *Рішення*"
+      ]) {
+        assert.ok(result.text.includes(marker), `${themeKey}.${levelKey} is missing ${marker}`);
       }
+
+      for (const forbidden of forbiddenVisibleFormats) {
+        assert.ok(!result.text.includes(forbidden), `${themeKey}.${levelKey} still shows ${forbidden}`);
+      }
+
+      assertThreeSentenceStructure(result, `${themeKey}.${levelKey}`);
+      assert.ok(result.text.length < 4000, `${themeKey}.${levelKey} exceeds Telegram limit`);
+
+      const keyboard = resultKeyboard(PRIMARY_BLOCK_KEY, themeKey, levelKey, 0, result.next);
+      const solutionButton = buttons(keyboard).find((button) => button.callback_data.startsWith("solution:"));
+      assert.equal(solutionButton?.text, "💡 Хочу рішення про це");
+      assert.equal(solutionButton?.callback_data, `solution:${result.next.themeKey}:${result.next.levelKey}`);
+      assertCallbackSizes(keyboard);
     }
   }
 
@@ -153,8 +156,8 @@ for (const themeKey of themes) {
     const continuation = buildContinuation(themeKey);
     assert.ok(continuation);
     assert.notEqual(continuation.themeKey, themeKey);
-    assert.ok(EXPERIENCE_MODES.includes(continuation.mode));
     assert.ok(continuation.text.includes("🔑✨ *Рішення*"));
+    assert.ok(!continuation.text.includes("🧭💡 *Що може допомогти далі*"));
   }
 }
 
@@ -171,12 +174,11 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 
     const result = buildGenericResult(blockKey, themeKey, levelKey);
     assert.ok(result);
-    assert.match(result.text, /^🪞 \*Ти відчуваєш це так\*/u);
-    assert.ok(result.text.includes("Ти відчуваєш"));
-    assert.ok(result.text.includes("🚀✅ *Що спробувати зараз*"));
-    assert.ok(result.text.includes("🔑✨ *Рішення*"));
-    for (const oldSection of oldVisibleSections) {
-      assert.ok(!result.text.includes(oldSection));
+    assertThreeSentenceStructure(result, `${blockKey}.${themeKey}`);
+    assert.ok(result.readCount >= 3 && result.readCount <= 9);
+    assert.match(result.text, new RegExp(`🔁 Прочитай це ${result.readCount} разів`, "u"));
+    for (const forbidden of forbiddenVisibleFormats) {
+      assert.ok(!result.text.includes(forbidden));
     }
     assert.ok(result.text.length < 4000);
 
@@ -189,7 +191,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 assert.equal(articleSlugs.size, 45);
 assert.equal(starterCount, 15);
 assert.equal(starterSlugs.size, 15);
-assert.equal(oldPoolTotal, 7500, "old semantic source layer remains intact");
-assert.equal(experienceTotal, 3150, "3 themes × 3 formats × 350 user-facing experiences");
+assert.equal(poolTotal, 7500, "500 × 5 × 3 semantic variants remain intact");
+assert.ok(seenReadCounts.size >= 5, "random repetition prompt should visibly vary across samples");
 
-console.log("✅ Experience flow passed: 350 mirror + 350 quiz + 350 story variants per theme, all ending in Рішення");
+console.log("✅ Structured flow passed: 5 blocks × 3 sentences, random 3–9 reads, no stories/quizzes");
