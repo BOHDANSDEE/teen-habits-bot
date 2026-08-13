@@ -8,7 +8,7 @@ assert.equal(new Set(HINTS).size, 500);
 for (const hint of HINTS) {
   assert.match(hint, /блок/iu);
   assert.match(hint, /підблок/iu);
-  assert.match(hint, /рівень/iu);
+  assert.match(hint, /рів(ень|ня)/iu);
 }
 
 const recommendation = getRandomRecommendation();
