@@ -1,9 +1,7 @@
 import { MAIN_BLOCK } from "./content.js";
 import { FUTURE_BLOCKS } from "./future-blocks.js";
+import { getRandomHint } from "./hint-pool.js";
 
-// Єдина точка реєстрації великих блоків бота.
-// HabitTeen лишається основним повним блоком, а FUTURE_BLOCKS — робочі заготовки
-// майбутніх тематичних сайтів із одним стартовим рівнем на кожен підблок.
 export const BLOCKS = {
   [MAIN_BLOCK.key]: {
     ...MAIN_BLOCK,
@@ -13,7 +11,6 @@ export const BLOCKS = {
   ...FUTURE_BLOCKS
 };
 
-// Додаткові резервні слоти лишаються прихованими до появи нових напрямів.
 export const RESERVED_BLOCK_SLOTS = Object.freeze(
   Array.from({ length: 8 }, (_, index) => ({
     key: `future_${index + 1}`,
@@ -38,22 +35,13 @@ export function getBlockSubtheme(blockKey, themeKey) {
 
 export function getAllLevelTargets() {
   const targets = [];
-
   for (const block of getActiveBlocks()) {
     for (const [themeKey, theme] of Object.entries(block.subthemes || {})) {
       for (const [levelKey, level] of Object.entries(theme.levels || {})) {
-        targets.push({
-          blockKey: block.key,
-          block,
-          themeKey,
-          theme,
-          levelKey,
-          level
-        });
+        targets.push({ blockKey: block.key, block, themeKey, theme, levelKey, level });
       }
     }
   }
-
   return targets;
 }
 
@@ -70,53 +58,32 @@ function cleanHintLabel(text) {
 }
 
 function getRecommendableBlocks() {
-  return getActiveBlocks()
-    .map((block) => {
-      const themes = Object.entries(block.subthemes || {}).filter(
-        ([, theme]) => Object.keys(theme?.levels || {}).length > 0
-      );
-      return themes.length ? { block, themes } : null;
-    })
-    .filter(Boolean);
+  return getActiveBlocks().filter((block) =>
+    Object.values(block.subthemes || {}).some(
+      (theme) => Object.keys(theme?.levels || {}).length > 0
+    )
+  );
 }
 
-// Підказка обирається ієрархічно, а не з плоского списку всіх рівнів:
-// 1) випадковий активний блок;
-// 2) випадковий підблок у ньому;
-// 3) випадковий рівень у підблоці.
-// Так великі блоки з десятками рівнів не витісняють маленькі нові напрями.
 export function getRandomRecommendation() {
-  const blockChoice = pickRandomEntry(getRecommendableBlocks());
-  if (!blockChoice) return null;
-
-  const [themeKey, theme] = pickRandomEntry(blockChoice.themes) || [];
-  if (!themeKey || !theme) return null;
-
-  const [levelKey, level] = pickRandomEntry(Object.entries(theme.levels || {})) || [];
-  if (!levelKey || !level) return null;
-
-  const block = blockChoice.block;
+  const block = pickRandomEntry(getRecommendableBlocks());
+  if (!block) return null;
 
   return {
     blockKey: block.key,
-    block: {
-      ...block,
-      name: `💡 Підказка\n🧩 Блок: ${cleanHintLabel(block.name)}`
-    },
-    themeKey,
-    theme: {
-      ...theme,
-      name: `📂 Підблок: ${cleanHintLabel(theme.name)}`
-    },
-    levelKey,
-    level
+    block,
+    themeKey: null,
+    levelKey: null,
+    theme: { name: getRandomHint() },
+    level: {
+      articleTitle: `Спочатку відкриється блок «${cleanHintLabel(block.name)}», далі ти обереш підблок і рівень.`
+    }
   };
 }
 
 export function findLevelByArticleSlug(articleSlug) {
   const normalized = String(articleSlug || "").trim().toLowerCase();
   if (!normalized) return null;
-
   return (
     getAllLevelTargets().find(
       (target) => String(target.level?.articleSlug || "").toLowerCase() === normalized
