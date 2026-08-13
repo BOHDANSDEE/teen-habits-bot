@@ -1,1 +1,1 @@
-export { buildContinuation, buildResult } from "./concise-result-v2.js";
+export { buildContinuation, buildResult } from "./concise-result-v3.js";
