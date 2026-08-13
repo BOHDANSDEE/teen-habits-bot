@@ -18,8 +18,35 @@ function firstSentence(text = "") {
   return ensureSentence(splitSentences(text)[0] || text);
 }
 
+function makeDefinite(text = "") {
+  return String(text || "")
+    .replace(/може бути/gu, "є")
+    .replace(/можуть бути/gu, "є")
+    .replace(/може відрізнятися/gu, "відрізняється")
+    .replace(/можуть відрізнятися/gu, "відрізняються")
+    .replace(/може викликати/gu, "викликає")
+    .replace(/можуть викликати/gu, "викликають")
+    .replace(/може проявлятися/gu, "проявляється")
+    .replace(/можуть проявлятися/gu, "проявляються")
+    .replace(/може впливати/gu, "впливає")
+    .replace(/можуть впливати/gu, "впливають")
+    .replace(/може допомагати/gu, "допомагає")
+    .replace(/може допомогти/gu, "допомагає")
+    .replace(/може стати/gu, "стає")
+    .replace(/може здаватися/gu, "здається")
+    .replace(/може означати/gu, "означає")
+    .replace(/може переходити/gu, "переходить")
+    .replace(/може виникати/gu, "виникає")
+    .replace(/може посилювати/gu, "посилює")
+    .replace(/може знижувати/gu, "знижує")
+    .replace(/може давати/gu, "дає")
+    .replace(/може залишатися/gu, "залишається")
+    .replace(/може триматися/gu, "тримається")
+    .trim();
+}
+
 function sentenceCore(text = "") {
-  return String(firstSentence(text)).replace(/[.!?…]+$/u, "").trim();
+  return makeDefinite(String(firstSentence(text)).replace(/[.!?…]+$/u, "").trim());
 }
 
 function lowerFirst(text = "") {
