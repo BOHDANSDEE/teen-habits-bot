@@ -5,48 +5,68 @@ import {
   getSubtheme,
   pickRandom
 } from "./content.js";
-import { expandSection } from "./rich-copy.js";
 
-const LEVEL_LANGUAGE_REPLACEMENTS = [
-  [/У цьому рівні/gu, "У цій ситуації"],
-  [/Ключова ознака цього рівня/gu, "Ключова ознака цього стану"],
-  [/Цей рівень відчувається так/gu, "Ця ситуація відчувається так"],
-  [/Проблемний вузол цього рівня/gu, "Проблемний вузол цієї ситуації"],
-  [/Цей рівень стає важчим/gu, "Ця ситуація стає важчою"],
-  [/Цей рівень вчить/gu, "Цей досвід вчить"],
-  [/Робота з цим рівнем/gu, "Робота з цим станом"],
-  [/Цей рівень показує/gu, "Цей досвід показує"],
-  [/Результат роботи з цим рівнем/gu, "Результат роботи з цим станом"]
-];
-
-function makeUserFacing(text = "") {
-  return LEVEL_LANGUAGE_REPLACEMENTS.reduce(
-    (result, [pattern, replacement]) => result.replace(pattern, replacement),
-    String(text || "")
-  );
-}
-
-function splitSentences(text = "") {
-  return String(text || "")
-    .trim()
-    .split(/(?<=[.!?…])\s+/u)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+const SUPPORT_COPY = {
+  lazy: {
+    state: [
+      "Ти хочеш рухатися, але старт забирає більше сил, ніж сама дія.",
+      "Коли перший крок стає ясним і невеликим, внутрішній опір слабшає."
+    ],
+    gain: [
+      "Так ти швидко знімаєш напругу перед стартом.",
+      "Але коротке полегшення залишає саму справу поруч і повертає її пізніше з більшим тиском."
+    ],
+    meaning: [
+      "Це проявляється у навчанні, роботі, побуті та особистих цілях — скрізь, де треба почати без ідеального настрою.",
+      "Коли ти керуєш стартом, у тебе з’являється більше довіри до власних дій."
+    ],
+    solution: [
+      "Я не чекаю ідеального моменту, щоб повернути собі рух.",
+      "Я підтверджую це рішення одним посильним кроком сьогодні."
+    ]
+  },
+  apathy: {
+    state: [
+      "Твій ресурс зараз нижчий, тому звичні речі відчуваються важчими.",
+      "Тут важливо не тиснути на себе, а повертати базові опори, ритм і підтримку."
+    ],
+    gain: [
+      "Так ти захищаєш залишок ресурсу від нових вимог.",
+      "Але коли уникнення стає єдиним способом берегти сили, контакт із життям звужується ще більше."
+    ],
+    meaning: [
+      "Це проявляється у тому, як ти ставишся до свого ресурсу, відпочинку, підтримки й щоденного ритму.",
+      "Коли ти помічаєш реальні потреби, повернення до звичного життя стає послідовнішим."
+    ],
+    solution: [
+      "Я ставлюся до свого ресурсу уважно й не вимагаю від себе неможливого.",
+      "Я повертаю опору через одну просту дію й підтримку, коли вона потрібна."
+    ]
+  },
+  procrastination: {
+    state: [
+      "Ти знаєш, що справа важлива, але коротке полегшення перемагає довший результат.",
+      "Чим довше ти відкладаєш, тим важчим здається сам момент старту."
+    ],
+    gain: [
+      "Так ти отримуєш полегшення прямо зараз і переносиш дискомфорт на потім.",
+      "Саме ця швидка винагорода закріплює цикл відкладання."
+    ],
+    meaning: [
+      "Це проявляється у дедлайнах, телефоні, навчанні, побуті та великих цілях.",
+      "Коли ти перестаєш чекати терміновості, у твоїх рішеннях з’являється більше свободи."
+    ],
+    solution: [
+      "Я не віддаю керування терміновості й швидкій винагороді.",
+      "Я починаю з конкретного кроку й повертаюся після відволікання."
+    ]
+  }
+};
 
 function ensureSentence(text = "") {
   const value = String(text || "").trim();
   if (!value) return "";
   return /[.!?…]$/u.test(value) ? value : `${value}.`;
-}
-
-function firstThree(text = "") {
-  return splitSentences(text).slice(0, 3).join(" ");
-}
-
-function richTail(themeKey, sectionKey, rawText) {
-  const expanded = makeUserFacing(expandSection(themeKey, sectionKey, rawText));
-  return splitSentences(expanded).slice(1, 3);
 }
 
 function lowerFirst(text = "") {
@@ -59,51 +79,42 @@ function cleanLevelName(name = "") {
   return String(name || "").replace(/^\d+\s*·\s*/u, "").trim();
 }
 
-function buildThreeSentenceSection(lead, tail = []) {
-  return firstThree([ensureSentence(lead), ...tail].filter(Boolean).join(" "));
+function pickDirect(pool = []) {
+  return ensureSentence(pickRandom(pool));
 }
 
-function pickDirect(pool = []) {
-  return makeUserFacing(pickRandom(pool));
+function threeSentences(first, tail = []) {
+  return [ensureSentence(first), ...tail.map(ensureSentence)].filter(Boolean).slice(0, 3).join(" ");
 }
 
 function buildState(themeKey, pools) {
-  const raw = pickDirect(pools.states);
-  const tail = richTail(themeKey, "states", raw);
-  return buildThreeSentenceSection(raw, tail);
+  return threeSentences(pickDirect(pools.states), SUPPORT_COPY[themeKey]?.state || []);
 }
 
 function buildProblem(themeKey, pools, level) {
   const raw = pickDirect(pools.problems);
-  const tail = richTail(themeKey, "problems", raw);
   const focus = String(level.summary || "")
     .replace(/^Фокус\s*—\s*/u, "")
     .replace(/[.!?…]+$/u, "")
     .trim();
-  const lead = `У цій проблемі для тебе важливо ${lowerFirst(focus)}`;
-  const third =
-    themeKey === "apathy"
-      ? "Якщо цей стан тримається довго або сильно заважає повсякденному життю, варто сказати про це дорослому, якому довіряєш, або звернутися до фахівця."
-      : tail[0];
-  return buildThreeSentenceSection(lead, [raw, third]);
+  const focusSentence = `Щоб змінити цей сценарій, тобі важливо ${lowerFirst(focus)}.`;
+  const consequence = "Через це сценарій повторюється й забирає в тебе більше ресурсу.";
+  const safety =
+    "Якщо цей стан тримається довго або сильно заважає повсякденному життю, скажи про це дорослому, якому довіряєш, або звернися до фахівця.";
+
+  return threeSentences(raw, themeKey === "apathy" ? [focusSentence, safety] : [consequence, focusSentence]);
 }
 
 function buildSecondaryGain(themeKey, pools) {
-  const raw = pickDirect(pools.secondaryGains);
-  const tail = richTail(themeKey, "secondaryGains", raw);
-  return buildThreeSentenceSection(raw, tail);
+  return threeSentences(pickDirect(pools.secondaryGains), SUPPORT_COPY[themeKey]?.gain || []);
 }
 
 function buildMeaning(themeKey, pools) {
-  const raw = pickDirect(pools.meanings);
-  const tail = richTail(themeKey, "meanings", raw);
-  return buildThreeSentenceSection(raw, tail);
+  return threeSentences(pickDirect(pools.meanings), SUPPORT_COPY[themeKey]?.meaning || []);
 }
 
 function buildSolution(themeKey, pools) {
-  const raw = pickDirect(pools.affirmations);
-  const tail = richTail(themeKey, "affirmations", raw);
-  return buildThreeSentenceSection(raw, tail);
+  return threeSentences(pickDirect(pools.affirmations), SUPPORT_COPY[themeKey]?.solution || []);
 }
 
 function buildNextSuggestion(currentThemeKey) {
@@ -123,6 +134,16 @@ function buildNextSuggestion(currentThemeKey) {
   };
 }
 
+function nextBenefit(next) {
+  if (!next?.summary) return "";
+  const focus = String(next.summary)
+    .replace(/^Фокус\s*—\s*/u, "")
+    .replace(/[.!?…]+$/u, "")
+    .trim();
+  if (!focus) return "";
+  return `➡️ *Хочеш продовжити?* Наступний розбір допоможе тобі ${lowerFirst(focus)}.`;
+}
+
 function randomReadCount() {
   return 3 + Math.floor(Math.random() * 7);
 }
@@ -140,6 +161,7 @@ export function buildResult(themeKey, levelKey) {
   const solution = buildSolution(themeKey, pools);
   const readCount = randomReadCount();
   const next = buildNextSuggestion(themeKey);
+  const benefit = nextBenefit(next);
   const problemName = cleanLevelName(level.name) || level.articleTitle;
 
   return {
@@ -149,7 +171,7 @@ export function buildResult(themeKey, levelKey) {
     articleTitle: level.articleTitle,
     next,
     readCount,
-    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${secondaryGain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${readCount} разів не поспішаючи.`
+    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${secondaryGain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${readCount} разів не поспішаючи.${benefit ? `\n\n${benefit}` : ""}`
   };
 }
 
@@ -159,19 +181,12 @@ export function buildContinuation(
   targetLevelKey = null
 ) {
   const requestedTheme = targetThemeKey ? getSubtheme(targetThemeKey) : null;
-  const requestedLevel =
-    requestedTheme && targetLevelKey
-      ? getLevel(targetThemeKey, targetLevelKey)
-      : null;
+  const requestedLevel = requestedTheme && targetLevelKey ? getLevel(targetThemeKey, targetLevelKey) : null;
 
   const themeKey =
-    requestedTheme && requestedLevel
-      ? targetThemeKey
-      : getRandomRelatedTheme(previousThemeKey);
+    requestedTheme && requestedLevel ? targetThemeKey : getRandomRelatedTheme(previousThemeKey);
   const levelKey =
-    requestedTheme && requestedLevel
-      ? targetLevelKey
-      : getRandomLevelKey(themeKey);
+    requestedTheme && requestedLevel ? targetLevelKey : getRandomLevelKey(themeKey);
 
   return buildResult(themeKey, levelKey);
 }
