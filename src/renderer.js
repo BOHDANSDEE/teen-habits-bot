@@ -60,6 +60,17 @@ function cleanLevelName(name = "") {
   return String(name || "").replace(/^\d+\s*·\s*/u, "").trim();
 }
 
+function cleanFocus(text = "") {
+  return String(text || "")
+    .replace(/^Фокус\s*—\s*/u, "")
+    .replace(/(?:,|\s)+(?:і|й|та)?\s*професійн\w*\s+оцінк\w*/giu, "")
+    .replace(/(?:,|\s)+(?:і|й|та)?\s*медичн\w*\s+оцінк\w*/giu, "")
+    .replace(/(?:,|\s)+(?:і|й|та)?\s*звернен\w*\s+(?:до|по)\s+(?:фахів\w*|лікар\w*)/giu, "")
+    .replace(/[.!?…]+$/u, "")
+    .replace(/\s{2,}/gu, " ")
+    .trim();
+}
+
 function pickDirect(pool = []) {
   return ensureSentence(pickRandom(pool));
 }
@@ -94,16 +105,13 @@ function buildState(themeKey, pools) {
 
 function buildProblem(themeKey, levelKey, level) {
   const fact = getProblemFact(themeKey, levelKey) || `Ти обрав конкретну проблему: ${cleanLevelName(level.name)}.`;
-  const focus = String(level.summary || "")
-    .replace(/^Фокус\s*—\s*/u, "")
-    .replace(/[.!?…]+$/u, "")
-    .trim();
+  const focus = cleanFocus(level.summary);
   const objective = "Це опис того, що відбувається зараз, а не оцінка твого характеру.";
-  const focusSentence = `У цьому розборі фокус конкретний: ${lowerFirst(focus)}.`;
-  const safety =
-    "Якщо цей стан тримається довго або сильно заважає повсякденному життю, скажи про це дорослому, якому довіряєш, або звернися до фахівця.";
+  const focusSentence = focus
+    ? `У цьому розборі фокус конкретний: ${lowerFirst(focus)}.`
+    : "У цьому розборі фокус на конкретній зміні цієї ситуації.";
 
-  return threeSentences(fact, themeKey === "apathy" ? [focusSentence, safety] : [objective, focusSentence]);
+  return threeSentences(fact, [objective, focusSentence]);
 }
 
 function buildSecondaryGain(themeKey, levelKey) {
@@ -138,11 +146,7 @@ function buildNextSuggestion(currentThemeKey) {
 }
 
 function nextBenefit(next) {
-  if (!next?.summary) return "";
-  const focus = String(next.summary)
-    .replace(/^Фокус\s*—\s*/u, "")
-    .replace(/[.!?…]+$/u, "")
-    .trim();
+  const focus = cleanFocus(next?.summary);
   if (!focus) return "";
   return `➡️ *Хочеш продовжити?* Наступний розбір допоможе тобі ${lowerFirst(focus)}.`;
 }
