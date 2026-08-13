@@ -5,20 +5,17 @@ import {
   getSubtheme,
   pickRandom
 } from "./content.js";
+import {
+  getLevelLifeMeaningPool,
+  getLevelSecondaryGainPool,
+  getProblemFact
+} from "./level-context-pools.js";
 
 const SUPPORT_COPY = {
   lazy: {
     state: [
       "Ти хочеш рухатися, але старт забирає більше сил, ніж сама дія.",
       "Коли перший крок стає ясним і невеликим, внутрішній опір слабшає."
-    ],
-    gain: [
-      "Так ти швидко знімаєш напругу перед стартом.",
-      "Але коротке полегшення залишає саму справу поруч і повертає її пізніше з більшим тиском."
-    ],
-    meaning: [
-      "Це проявляється у навчанні, роботі, побуті та особистих цілях — скрізь, де треба почати без ідеального настрою.",
-      "Коли ти керуєш стартом, у тебе з’являється більше довіри до власних дій."
     ],
     solution: [
       "Я не чекаю ідеального моменту, щоб повернути собі рух.",
@@ -30,14 +27,6 @@ const SUPPORT_COPY = {
       "Твій ресурс зараз нижчий, тому звичні речі відчуваються важчими.",
       "Тут важливо не тиснути на себе, а повертати базові опори, ритм і підтримку."
     ],
-    gain: [
-      "Так ти захищаєш залишок ресурсу від нових вимог.",
-      "Але коли уникнення стає єдиним способом берегти сили, контакт із життям звужується ще більше."
-    ],
-    meaning: [
-      "Це проявляється у тому, як ти ставишся до свого ресурсу, відпочинку, підтримки й щоденного ритму.",
-      "Коли ти помічаєш реальні потреби, повернення до звичного життя стає послідовнішим."
-    ],
     solution: [
       "Я ставлюся до свого ресурсу уважно й не вимагаю від себе неможливого.",
       "Я повертаю опору через одну просту дію й підтримку, коли вона потрібна."
@@ -47,14 +36,6 @@ const SUPPORT_COPY = {
     state: [
       "Ти знаєш, що справа важлива, але коротке полегшення перемагає довший результат.",
       "Чим довше ти відкладаєш, тим важчим здається сам момент старту."
-    ],
-    gain: [
-      "Так ти отримуєш полегшення прямо зараз і переносиш дискомфорт на потім.",
-      "Саме ця швидка винагорода закріплює цикл відкладання."
-    ],
-    meaning: [
-      "Це проявляється у дедлайнах, телефоні, навчанні, побуті та великих цілях.",
-      "Коли ти перестаєш чекати терміновості, у твоїх рішеннях з’являється більше свободи."
     ],
     solution: [
       "Я не віддаю керування терміновості й швидкій винагороді.",
@@ -83,6 +64,16 @@ function pickDirect(pool = []) {
   return ensureSentence(pickRandom(pool));
 }
 
+function pickUnique(pool = [], count = 3) {
+  const copy = [...new Set(pool)];
+  const result = [];
+  while (copy.length && result.length < count) {
+    const index = Math.floor(Math.random() * copy.length);
+    result.push(copy.splice(index, 1)[0]);
+  }
+  return result;
+}
+
 function threeSentences(first, tail = []) {
   return [ensureSentence(first), ...tail.map(ensureSentence)].filter(Boolean).slice(0, 3).join(" ");
 }
@@ -91,26 +82,28 @@ function buildState(themeKey, pools) {
   return threeSentences(pickDirect(pools.states), SUPPORT_COPY[themeKey]?.state || []);
 }
 
-function buildProblem(themeKey, pools, level) {
-  const raw = pickDirect(pools.problems);
+function buildProblem(themeKey, levelKey, level) {
+  const fact = getProblemFact(themeKey, levelKey) || `Ти обрав конкретну проблему: ${cleanLevelName(level.name)}.`;
   const focus = String(level.summary || "")
     .replace(/^Фокус\s*—\s*/u, "")
     .replace(/[.!?…]+$/u, "")
     .trim();
-  const focusSentence = `Щоб змінити цей сценарій, тобі важливо ${lowerFirst(focus)}.`;
-  const consequence = "Через це сценарій повторюється й забирає в тебе більше ресурсу.";
+  const objective = "Це опис того, що відбувається зараз, а не оцінка твого характеру.";
+  const focusSentence = `У цьому розборі фокус конкретний: ${lowerFirst(focus)}.`;
   const safety =
     "Якщо цей стан тримається довго або сильно заважає повсякденному життю, скажи про це дорослому, якому довіряєш, або звернися до фахівця.";
 
-  return threeSentences(raw, themeKey === "apathy" ? [focusSentence, safety] : [consequence, focusSentence]);
+  return threeSentences(fact, themeKey === "apathy" ? [focusSentence, safety] : [objective, focusSentence]);
 }
 
-function buildSecondaryGain(themeKey, pools) {
-  return threeSentences(pickDirect(pools.secondaryGains), SUPPORT_COPY[themeKey]?.gain || []);
+function buildSecondaryGain(themeKey, levelKey) {
+  const pool = getLevelSecondaryGainPool(themeKey, levelKey);
+  return pickUnique(pool, 3).map(ensureSentence).join(" ");
 }
 
-function buildMeaning(themeKey, pools) {
-  return threeSentences(pickDirect(pools.meanings), SUPPORT_COPY[themeKey]?.meaning || []);
+function buildMeaning(themeKey, levelKey) {
+  const pool = getLevelLifeMeaningPool(themeKey, levelKey);
+  return pickUnique(pool, 3).map(ensureSentence).join(" ");
 }
 
 function buildSolution(themeKey, pools) {
@@ -155,9 +148,9 @@ export function buildResult(themeKey, levelKey) {
 
   const pools = theme.pools || {};
   const state = buildState(themeKey, pools);
-  const problem = buildProblem(themeKey, pools, level);
-  const secondaryGain = buildSecondaryGain(themeKey, pools);
-  const meaning = buildMeaning(themeKey, pools);
+  const problem = buildProblem(themeKey, levelKey, level);
+  const secondaryGain = buildSecondaryGain(themeKey, levelKey);
+  const meaning = buildMeaning(themeKey, levelKey);
   const solution = buildSolution(themeKey, pools);
   const readCount = randomReadCount();
   const next = buildNextSuggestion(themeKey);
