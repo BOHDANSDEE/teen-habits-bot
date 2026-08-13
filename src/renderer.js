@@ -141,7 +141,7 @@ function nextBenefit(next) {
     .replace(/[.!?…]+$/u, "")
     .trim();
   if (!focus) return "";
-  return `➡️ *Далі* Наступний розбір допоможе тобі ${lowerFirst(focus)}.`;
+  return `➡️ *Хочеш продовжити?* Наступний розбір допоможе тобі ${lowerFirst(focus)}.`;
 }
 
 function randomReadCount() {
