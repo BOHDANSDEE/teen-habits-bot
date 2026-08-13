@@ -25,6 +25,8 @@ const forbidden = [
 ];
 const referral = /фахів|лікар|професійн\w*\s+оцінк|медичн\w*\s+оцінк/iu;
 const directPerson = /(ти|тобі|тебе|твоє|твій|твоя|твоєму|твоїх)/iu;
+const physicalResult = /(ти|тобі|тебе|дихан|плеч|ног|рук|ши[яї]|голов|оч|спин|лоб|щелеп|кист|кіст|тіл|лопат|грудн)/iu;
+const gainJargon = /сценарій|патерн|механізм|внутрішня система/iu;
 
 function sentenceCount(text = "") {
   return String(text).trim().split(/(?<=[.!?…])\s+/u).filter(Boolean).length;
@@ -65,7 +67,9 @@ function assertBalanced(result, label, expectNext) {
     assert.ok(text.length <= 620, `${label}.${name} is too long`);
   }
   assert.match(value.state, directPerson);
-  assert.match(value.after, directPerson);
+  assert.match(value.after, physicalResult);
+  assert.match(value.gain, /^Тобі на короткий час стає легше, бо можна /u);
+  assert.ok(!gainJargon.test(value.gain), `${label}.gain must not use jargon`);
   assert.ok(!referral.test(result.text), `${label} contains referral copy`);
   assert.ok(result.readCount >= 3 && result.readCount <= 9);
   assert.ok(result.text.length < 2800, `${label} must stay compact`);
@@ -87,7 +91,7 @@ for (const themeKey of themes) {
   assert.equal(new Set(afterPool).size, 500, `${themeKey} after-state variants must be unique`);
   for (const item of afterPool) {
     assert.equal(sentenceCount(item), 1);
-    assert.match(item, directPerson);
+    assert.match(item, physicalResult);
   }
 
   for (const [levelKey, level] of Object.entries(theme.levels)) {
@@ -126,4 +130,4 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 }
 
 assert.equal(starterCount, 15);
-console.log("✅ Balanced flow: 2-3 concise sentences per block + 500 after-state variants per main theme");
+console.log("✅ Balanced flow: 2-3 concise sentences per block + plain secondary gain + physical result wording");
