@@ -26,6 +26,16 @@ function sentence(text = "") {
   return value ? `${value}.` : "";
 }
 
+function plainWords(text = "") {
+  return String(text || "")
+    .replace(/сценарі(й|ю|єм|ї)/giu, "звичний спосіб")
+    .replace(/патерн\w*/giu, "звичка")
+    .replace(/механізм\w*/giu, "реакція")
+    .replace(/внутрішн(я|ю) систем\w*/giu, "ця реакція")
+    .replace(/\s{2,}/gu, " ")
+    .trim();
+}
+
 export function secondaryGainCore(text = "") {
   let value = String(text || "").trim();
   for (const prefix of PREFIXES) {
@@ -34,7 +44,8 @@ export function secondaryGainCore(text = "") {
       break;
     }
   }
-  return value.replace(/^[—:,-]\s*/u, "").replace(/[.!?…]+$/u, "").trim();
+  value = value.replace(/^[—:,-]\s*/u, "").replace(/[.!?…]+$/u, "").trim();
+  return plainWords(value);
 }
 
 export function buildPlainSecondaryGain(text = "") {
