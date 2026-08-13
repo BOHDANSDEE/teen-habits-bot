@@ -1,10 +1,18 @@
 import { getBlock, getBlockSubtheme } from "./navigation.js";
 
-const formatActions = (actions = []) =>
-  actions
-    .slice(0, 3)
-    .map((action, index) => `${["1️⃣", "2️⃣", "3️⃣"][index]} ${action}`)
-    .join("\n");
+function ensureSentence(text = "") {
+  const value = String(text || "").trim();
+  if (!value) return "";
+  return /[.!?…]$/u.test(value) ? value : `${value}.`;
+}
+
+function cleanLevelName(name = "") {
+  return String(name || "").replace(/^\d+\s*·\s*/u, "").trim();
+}
+
+function randomReadCount() {
+  return 3 + Math.floor(Math.random() * 7);
+}
 
 export function buildGenericResult(blockKey, themeKey, levelKey) {
   const block = getBlock(blockKey);
@@ -12,6 +20,33 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
   const level = theme?.levels?.[levelKey];
   if (!block || !theme || !level) return null;
 
+  const readCount = randomReadCount();
+  const problemName = cleanLevelName(level.name) || level.articleTitle;
+  const state = [
+    ensureSentence(level.state),
+    "Це може впливати на те, скільки в тебе залишається уваги, енергії або бажання діяти в цій темі.",
+    "Замість оцінювати себе за цей стан, корисніше помітити, у які моменти він стає сильнішим."
+  ].join(" ");
+  const problem = [
+    ensureSentence(level.problem),
+    "Саме ця точка найчастіше підтримує обраний сценарій і не дає йому змінитися сам по собі.",
+    "Коли вона повторюється, проблема починає впливати не лише на один момент, а й на звичний спосіб дії."
+  ].join(" ");
+  const secondaryGain = [
+    ensureSentence(`Тобі може бути по-своєму вигідно залишатися в цьому сценарії, тому що ${level.secondaryGain}`),
+    "Це дає коротке полегшення або відчуття знайомості, тому мозок може повертатися до цього способу знову.",
+    "Вторинна вигода не робить проблему корисною — вона лише пояснює, чому змінювати її іноді складніше, ніж здається."
+  ].join(" ");
+  const meaning = [
+    ensureSentence(level.meaning),
+    "У житті це може проявлятися в рішеннях, звичках, ставленні до себе та реакціях у схожих ситуаціях.",
+    "Коли ти починаєш помічати цей зв’язок, стає легше вибирати інший спосіб дії."
+  ].join(" ");
+  const solution = [
+    ensureSentence(level.affirmation),
+    "Я дозволяю собі закріплювати це рішення поступово, без вимоги змінитися за один день.",
+    "Я повертаюся до цієї думки щоразу, коли старий сценарій знову стає автоматичним."
+  ].join(" ");
   const note = level.note ? `\n\n🛟 *Важлива межа*\n${level.note}` : "";
 
   return {
@@ -20,6 +55,7 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
     levelKey,
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
-    text: `🪞 *Ти відчуваєш це так*\nТи відчуваєш, що ${level.state}\n\nТобі найбільше заважає те, що ${level.problem}\n\nСтарий сценарій тримається, бо він допомагає ${level.secondaryGain}\n\nЗмінювати його варто, щоб ${level.meaning}\n\n🎯 У цій темі фокус такий: ${level.summary}\n\n🚀✅ *Що спробувати зараз*\n${formatActions(level.actions)}${note}\n\n🔑✨ *Рішення*\n${level.affirmation}\n\n_Скажи це своїми словами й підтверди одним маленьким кроком сьогодні._`
+    readCount,
+    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${secondaryGain}\n\n🌟🧭 *Значення в житті*\n${meaning}${note}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це ${readCount} разів не поспішаючи.`
   };
 }
