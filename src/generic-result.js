@@ -18,6 +18,18 @@ function firstSentence(text = "") {
   return ensureSentence(splitSentences(text)[0] || text);
 }
 
+function sentenceCore(text = "") {
+  return String(firstSentence(text))
+    .replace(/[.!?…]+$/u, "")
+    .trim();
+}
+
+function lowerFirst(text = "") {
+  const value = String(text || "").trim();
+  if (!value) return value;
+  return `${value.charAt(0).toLocaleLowerCase("uk-UA")}${value.slice(1)}`;
+}
+
 function cleanLevelName(name = "") {
   return String(name || "").replace(/^\d+\s*·\s*/u, "").trim();
 }
@@ -35,7 +47,7 @@ export function buildGenericResult(blockKey, themeKey, levelKey) {
   const readCount = randomReadCount();
   const problemName = cleanLevelName(level.name) || level.articleTitle;
   const state = [
-    firstSentence(level.state),
+    ensureSentence(`Ти можеш відчувати, що ${lowerFirst(sentenceCore(level.state))}`),
     "Це може впливати на те, скільки в тебе залишається уваги, енергії або бажання діяти в цій темі.",
     "Замість того щоб оцінювати себе за цей стан, корисніше помітити, у які моменти він стає сильнішим."
   ].join(" ");
