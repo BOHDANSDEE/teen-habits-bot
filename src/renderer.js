@@ -11,6 +11,8 @@ import {
   getProblemFact
 } from "./level-context-pools.js";
 
+const REFERRAL_PATTERN = /фахів|лікар|професійн\w*\s+оцінк|медичн\w*\s+оцінк/iu;
+
 const SUPPORT_COPY = {
   lazy: {
     state: [
@@ -61,7 +63,7 @@ function cleanLevelName(name = "") {
 }
 
 function cleanFocus(text = "") {
-  return String(text || "")
+  const cleaned = String(text || "")
     .replace(/^Фокус\s*—\s*/u, "")
     .replace(/(?:,|\s)+(?:і|й|та)?\s*професійн\w*\s+оцінк\w*/giu, "")
     .replace(/(?:,|\s)+(?:і|й|та)?\s*медичн\w*\s+оцінк\w*/giu, "")
@@ -69,10 +71,12 @@ function cleanFocus(text = "") {
     .replace(/[.!?…]+$/u, "")
     .replace(/\s{2,}/gu, " ")
     .trim();
+  return REFERRAL_PATTERN.test(cleaned) ? "" : cleaned;
 }
 
-function pickDirect(pool = []) {
-  return ensureSentence(pickRandom(pool));
+function pickDirect(pool = [], fallback = "") {
+  const safe = pool.filter((item) => !REFERRAL_PATTERN.test(String(item || "")));
+  return ensureSentence(pickRandom(safe) || fallback);
 }
 
 function shuffle(items = []) {
@@ -85,14 +89,25 @@ function shuffle(items = []) {
 }
 
 function pickContextTriplet(pool = []) {
-  if (pool.length !== 500) return shuffle([...new Set(pool)]).slice(0, 3);
-  const tagGroups = shuffle([0, 1, 2, 3, 4]).slice(0, 3);
-  return tagGroups.map((tagGroup) => {
-    const frameIndex = Math.floor(Math.random() * 20);
-    const variantIndex = Math.floor(Math.random() * 5);
-    const coreIndex = tagGroup * 5 + variantIndex;
-    return pool[frameIndex * 25 + coreIndex];
-  });
+  const safePool = pool.filter((item) => !REFERRAL_PATTERN.test(String(item || "")));
+  if (pool.length !== 500) return shuffle([...new Set(safePool)]).slice(0, 3);
+
+  const tagGroups = shuffle([0, 1, 2, 3, 4]);
+  const result = [];
+  for (const tagGroup of tagGroups) {
+    const candidates = [];
+    for (let frameIndex = 0; frameIndex < 20; frameIndex += 1) {
+      for (let variantIndex = 0; variantIndex < 5; variantIndex += 1) {
+        const coreIndex = tagGroup * 5 + variantIndex;
+        const item = pool[frameIndex * 25 + coreIndex];
+        if (item && !REFERRAL_PATTERN.test(item)) candidates.push(item);
+      }
+    }
+    if (candidates.length) result.push(pickRandom(candidates));
+    if (result.length === 3) break;
+  }
+
+  return result.length === 3 ? result : shuffle([...new Set(safePool)]).slice(0, 3);
 }
 
 function threeSentences(first, tail = []) {
@@ -100,11 +115,17 @@ function threeSentences(first, tail = []) {
 }
 
 function buildState(themeKey, pools) {
-  return threeSentences(pickDirect(pools.states), SUPPORT_COPY[themeKey]?.state || []);
+  return threeSentences(
+    pickDirect(pools.states, "Ти відчуваєш, що ця ситуація зараз забирає частину твого ресурсу."),
+    SUPPORT_COPY[themeKey]?.state || []
+  );
 }
 
 function buildProblem(themeKey, levelKey, level) {
-  const fact = getProblemFact(themeKey, levelKey) || `Ти обрав конкретну проблему: ${cleanLevelName(level.name)}.`;
+  const rawFact = getProblemFact(themeKey, levelKey);
+  const fact = rawFact && !REFERRAL_PATTERN.test(rawFact)
+    ? rawFact
+    : `Ти бачиш конкретну проблему: ${cleanLevelName(level.name)}.`;
   const focus = cleanFocus(level.summary);
   const objective = "Це опис того, що відбувається зараз, а не оцінка твого характеру.";
   const focusSentence = focus
@@ -116,16 +137,27 @@ function buildProblem(themeKey, levelKey, level) {
 
 function buildSecondaryGain(themeKey, levelKey) {
   const pool = getLevelSecondaryGainPool(themeKey, levelKey);
-  return pickContextTriplet(pool).map(ensureSentence).join(" ");
+  const picked = pickContextTriplet(pool);
+  return threeSentences(
+    picked[0] || "Тобі вигідно лишати цей сценарій без змін, бо так не треба перебудовувати звичну реакцію прямо зараз.",
+    picked.slice(1)
+  );
 }
 
 function buildMeaning(themeKey, levelKey) {
   const pool = getLevelLifeMeaningPool(themeKey, levelKey);
-  return pickContextTriplet(pool).map(ensureSentence).join(" ");
+  const picked = pickContextTriplet(pool);
+  return threeSentences(
+    picked[0] || "У твоєму житті цей сценарій повторюється в щоденних рішеннях і забирає частину уваги.",
+    picked.slice(1)
+  );
 }
 
 function buildSolution(themeKey, pools) {
-  return threeSentences(pickDirect(pools.affirmations), SUPPORT_COPY[themeKey]?.solution || []);
+  return threeSentences(
+    pickDirect(pools.affirmations, "Я обираю змінювати цей сценарій конкретними діями."),
+    SUPPORT_COPY[themeKey]?.solution || []
+  );
 }
 
 function buildNextSuggestion(currentThemeKey) {
@@ -147,7 +179,7 @@ function buildNextSuggestion(currentThemeKey) {
 
 function nextBenefit(next) {
   const focus = cleanFocus(next?.summary);
-  if (!focus) return "";
+  if (!focus) return "➡️ *Хочеш продовжити?* Наступний розбір допоможе тобі побачити ще одну конкретну частину цієї ситуації.";
   return `➡️ *Хочеш продовжити?* Наступний розбір допоможе тобі ${lowerFirst(focus)}.`;
 }
 
