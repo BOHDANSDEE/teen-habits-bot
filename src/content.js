@@ -1,5 +1,5 @@
 import { LEVELS_BY_THEME } from "./levels-45.js";
-import { THEME_POOLS } from "./pools.js";
+import { THEME_POOLS } from "./direct-pools.js";
 
 export const MAIN_BLOCK = {
   key: "state_action",
