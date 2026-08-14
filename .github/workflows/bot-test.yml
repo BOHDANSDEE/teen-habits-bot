@@ -24,12 +24,21 @@ jobs:
       - run: node --check src/pools.js
       - run: node --check src/direct-pools.js
       - run: node --check src/level-context-pools.js
+      - run: node --check src/body-state-pools.js
       - run: node --check src/after-state-lazy.js
       - run: node --check src/after-state-apathy.js
       - run: node --check src/after-state-procrastination.js
+      - run: node --check src/concise-result-v3.js
       - run: node --check src/concise-result.js
       - run: node --check src/concise-generic-result.js
+      - run: node --check src/generic-500-pools.js
+      - run: node --check src/balanced-generic-result.js
+      - run: node --check src/feeling-guide-intros.js
+      - run: node --check src/feeling-guide-scenes.js
+      - run: node --check src/feeling-guide.js
       - run: node --check src/renderer.js
       - run: node --check src/generic-result.js
       - run: node --check src/navigation-keyboards.js
+      - run: node --check tests/concise-flow.test.mjs
+      - run: node --check tests/generic-500-flow.test.mjs
       - run: npm test
