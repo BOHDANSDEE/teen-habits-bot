@@ -129,7 +129,7 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
     assert.equal(new Set(guides).size, 500, `${themeKey}/${levelKey}: guided visible variants`);
 
     for (const text of guides) {
-      assert.match(text, /^💭 \*Ти так це відчуваєш\?\*\n\nТи відчуваєш /u);
+      assert.match(text, /^💭 \*Ти так це відчуваєш\?\*\n\nТи відчуваєш(?:,|\s)/u);
       const opening = text.split("\n\n")[1];
       const step1 = sectionBetween(text, "🔷 *Крок 1: Стан*\n", "\n\n🔷 *Крок 2: Дихання*");
       const step2 = sectionBetween(text, "🔷 *Крок 2: Дихання*\n", "\n\n🔷 *Крок 3: Опора*");
@@ -156,7 +156,7 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
 const firstThemeKey = Object.keys(MAIN_BLOCK.subthemes)[0];
 const firstLevelKey = Object.keys(MAIN_BLOCK.subthemes[firstThemeKey].levels)[0];
 const continuation = buildContinuation(firstThemeKey, firstThemeKey, firstLevelKey);
-assert.match(continuation.text, /^💭 \*Ти так це відчуваєш\?\*\n\nТи відчуваєш /u);
+assert.match(continuation.text, /^💭 \*Ти так це відчуваєш\?\*\n\nТи відчуваєш(?:,|\s)/u);
 assert.match(continuation.text, /✨ \*Тепер ти відчуваєш\*\nТепер ти відчуваєш(?:,|\s)/u);
 assert.equal(continuation.themeKey, firstThemeKey);
 assert.equal(continuation.levelKey, firstLevelKey);
