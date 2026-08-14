@@ -14,16 +14,16 @@ export function buildFeelingGuide(themeKey, levelKey, requestedVariant = null) {
 
   const states = PRIMARY_BODY_STATES[themeKey] || PRIMARY_BODY_STATES.lazy;
   const results = PRIMARY_BODY_RESULTS[themeKey] || PRIMARY_BODY_RESULTS.lazy;
-  const state = states[index] || states[0] || "Ти відчуваєш напругу в тілі.";
-  const result = results[index] || results[0] || "Тепер ти відчуваєш полегшення в тілі.";
+  const state = states[index] || states[0] || "Ти відчуваєш напругу у плечах.";
+  const result = results[index] || results[0] || "Тепер ти відчуваєш полегшення у плечах.";
 
   return {
     themeKey,
     levelKey,
     variantIndex: index,
-    bodyAnchorIndex: Math.floor(index / 25),
+    bodyAnchorIndex: Math.floor(index / 20),
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
-    text: `💭 *Ти так це відчуваєш?*\n\n${state}\n\n✨ *Тепер ти відчуваєш*\n${result}`
+    text: `${state}\n\n✨ *Тепер ти відчуваєш*\n${result}`
   };
 }
