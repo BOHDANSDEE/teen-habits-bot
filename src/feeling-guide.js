@@ -12,12 +12,14 @@ export function buildFeelingGuide(themeKey, levelKey, requestedVariant = null) {
   if (!theme || !level) return null;
 
   const index = Number.isInteger(requestedVariant)
-    ? ((requestedVariant % 500) + 500) % 500
-    : Math.floor(Math.random() * 500);
-  const intro = FEELING_GUIDE_INTROS[Math.floor(index / 25)];
+    ? ((requestedVariant % FEELING_GUIDE_VARIANTS) + FEELING_GUIDE_VARIANTS) % FEELING_GUIDE_VARIANTS
+    : Math.floor(Math.random() * FEELING_GUIDE_VARIANTS);
+
+  const intro = FEELING_GUIDE_INTROS[Math.floor(index / 25)] || FEELING_GUIDE_INTROS[0] || "";
   const scene = index % 25;
-  const anchor = FEELING_BODY_ANCHORS[Math.floor(scene / 5)];
-  const image = FEELING_IMAGES[scene % 5];
+  const anchors = FEELING_BODY_ANCHORS[themeKey] || FEELING_BODY_ANCHORS.lazy;
+  const anchor = anchors[Math.floor(scene / 5)];
+  const detail = FEELING_IMAGES[scene % 5];
   const levelName = cleanName(level.name) || level.articleTitle || "цей стан";
   const solution = `Я не маю вирішити все одразу. Я обираю один спокійний крок у темі «${levelName}».`;
 
@@ -25,8 +27,9 @@ export function buildFeelingGuide(themeKey, levelKey, requestedVariant = null) {
     themeKey,
     levelKey,
     variantIndex: index,
+    bodyAnchorIndex: Math.floor(scene / 5),
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
-    text: `💭 *Ти так це відчуваєш?*\n\n${anchor.start}\n\n${intro} Давай пройдемо тему «${levelName}» через кілька простих відчуттів у тілі.\n\n🔷 *Крок 1: Стан*\nЗатримай увагу на ${anchor.notice}. ${image.state}\n\n🔷 *Крок 2: Дихання*\n${image.breath} Помічай навіть невелику різницю між напругою на початку й зараз.\n\n🔷 *Крок 3: Опора*\n${image.support} ${anchor.movement}.\n\n🔷 *Крок 4: Рух*\nНе потрібно робити великий ривок. Обери один невеликий рух, який реально можеш зробити після цього повідомлення.\n\n🔑 *Рішення*\n${solution}\n\n✨ *Тепер ти відчуваєш*\n${anchor.release}. ${image.result}`
+    text: `💭 *Ти так це відчуваєш?*\n\n${anchor.start}\n\n${intro} Давай на кілька хвилин пройдемо тему «${levelName}» через конкретні відчуття в тілі.\n\n🔷 *Крок 1: Стан*\n${anchor.step1} ${detail.state}\n\n🔷 *Крок 2: Дихання*\n${anchor.breath} ${detail.breath}\n\n🔷 *Крок 3: Опора*\n${anchor.support} ${detail.support}\n\n🔷 *Крок 4: Рух*\n${anchor.move} ${detail.move}\n\n🔑 *Рішення*\n${solution}\n\n✨ *Тепер ти відчуваєш*\n${anchor.release} ${detail.result}`
   };
 }
