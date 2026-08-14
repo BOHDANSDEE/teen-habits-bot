@@ -24,6 +24,7 @@ jobs:
       - run: node --check src/pools.js
       - run: node --check src/direct-pools.js
       - run: node --check src/level-context-pools.js
+      - run: node --check src/direct-body-copy.js
       - run: node --check src/body-state-pools.js
       - run: node --check src/after-state-lazy.js
       - run: node --check src/after-state-apathy.js
@@ -41,4 +42,5 @@ jobs:
       - run: node --check src/navigation-keyboards.js
       - run: node --check tests/concise-flow.test.mjs
       - run: node --check tests/generic-500-flow.test.mjs
+      - run: node --check tests/direct-body-copy.test.mjs
       - run: npm test
