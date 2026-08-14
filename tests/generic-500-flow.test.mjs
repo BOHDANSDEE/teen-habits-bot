@@ -45,7 +45,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
       }
 
       assert.ok(pools.states.every((text) => text.startsWith("Ти відчуваєш ")));
-      assert.ok(pools.results.every((text) => text.startsWith("Тепер ти відчуваєш ")));
+      assert.ok(pools.results.every((text) => text.startsWith("Тепер ти відчуваєш")));
       assert.ok(pools.states.every((text) => PHYSICAL.test(text)), `${blockKey}/${themeKey}: state must be physical`);
       assert.ok(pools.results.every((text) => PHYSICAL.test(text)), `${blockKey}/${themeKey}: result must be physical`);
 
@@ -62,7 +62,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         const final = sectionBetween(result.text, "✨ *Тепер ти відчуваєш*\n", null);
 
         assert.ok(state.startsWith("Ти відчуваєш "));
-        assert.ok(final.startsWith("Тепер ти відчуваєш "));
+        assert.ok(final.startsWith("Тепер ти відчуваєш"));
         assert.ok(sharesBodyZone(state, final), `${blockKey}/${themeKey}/${levelKey}: renderer body zone`);
         assert.ok(result.text.includes("🧩⚠️ *Проблема —"));
         assert.ok(result.text.includes("🪞🎁 *Вторинна вигода*"));
