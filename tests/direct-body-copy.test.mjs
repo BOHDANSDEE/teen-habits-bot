@@ -15,24 +15,27 @@ import { buildPlainSecondaryGain } from "../src/plain-secondary-gain.js";
 import { getLevelProblemPool } from "../src/problem-pools.js";
 import { buildResult } from "../src/renderer.js";
 
-const DIRECT_PHYSICAL = /біль|важк|мляв|втом|тиск|напруг|напруж|стис|скут|сонлив|прохолод|холод|дихан|слабк|неспокій|м’яз/iu;
-const DIRECT_SECOND = /тіл|рух|м’яз|спер|опор|сід|сид|поз|полож|рук|ног|напруг|важк|втом|плеч|зупин|пауз|фізич|затис/iu;
-const PHYSICAL_RELIEF = /легш|легк|слабш|мляв|м’якш|м'якш|розслаб|вільніш|тепліш|спокійніш|менш|відпочил|розтис|вирівнял|кращ|рухлив|бадьор|затис|скут/iu;
-const POSITIVE_EMOTION = /полегш|рад|настр|спок|задов|позит|щаст|приєм|впев|кращ|емоці|комфорт/iu;
-const OLD_ABSTRACT_STATE = /це (?:особливо|сильніше|помітніше)|відчуття стає|тіло нагадує про це|тема .* потребує рішення/iu;
+const DIRECT_PHYSICAL = /біль|важк|мляв|втом|тиск|напруг|стиск|скут|прохолод|холод|дихан|неспокій/iu;
+const FORBIDDEN_MEDICAL = /кровообіг\s+(?:покращ|нормаліз)|тиск\s+нормаліз|нервов\w*\s+систем\w*\s+вилікувал|судин\w*\s+працю\w*\s+краще/iu;
 
 const BODY_ZONES = [
-  /голов|лоб|оч/iu,
+  /скрон/iu,
+  /потилиц/iu,
+  /лоб/iu,
+  /оч|повік/iu,
   /щелеп/iu,
   /ши/iu,
   /плеч/iu,
-  /груд|дих/iu,
-  /спин|лопат/iu,
-  /рук|кист|долон|пальц/iu,
+  /груд|ключиц|дих/iu,
+  /спин|лопат|поперек/iu,
+  /передпліч|зап’яст|зап'яст|кист|долон|пальц|рук/iu,
   /жив/iu,
-  /ног|колін|стоп/iu,
-  /тіл|м’яз/iu
+  /таз/iu,
+  /стегн|литк|щиколот|п’ят|п'ят|колін|стоп|ног/iu,
+  /тіл|м’яз|м'яз/iu
 ];
+
+const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
 
 function sentence(text = "") {
   const value = String(text || "").trim();
@@ -74,29 +77,26 @@ function assertLockedSections(text, expected, label) {
 }
 
 function assertDirectState(state, label) {
-  const sentences = state.split(/(?<=[.!?])\s+/u).filter(Boolean);
-  assert.ok(state.startsWith("Ти відчуваєш "), `${label}: must start directly`);
-  assert.ok(sentences.length >= 2, `${label}: needs two concrete physical sentences`);
-  assert.match(sentences[0], DIRECT_PHYSICAL, `${label}: first sentence needs a concrete body sensation`);
-  assert.match(sentences[1], DIRECT_SECOND, `${label}: second sentence must stay physical`);
-  assert.doesNotMatch(state, OLD_ABSTRACT_STATE, `${label}: old abstract wording must not return`);
+  assert.ok(state.startsWith("Ти відчуваєш "), `${label}: direct state prefix`);
+  assert.equal(sentenceCount(state), 1, `${label}: state must be exactly one sentence`);
+  assert.match(state, DIRECT_PHYSICAL, `${label}: concrete physical sensation`);
+  assert.doesNotMatch(state, FORBIDDEN_MEDICAL, `${label}: no medical guarantee`);
 }
 
 function assertDirectResult(result, label) {
-  const sentences = result.split(/(?<=[.!?])\s+/u).filter(Boolean);
-  assert.ok(result.startsWith("Тепер ти відчуваєш,"), `${label}: result prefix`);
-  assert.match(sentences[0], PHYSICAL_RELIEF, `${label}: first result sentence needs concrete physical relief`);
-  assert.ok(sentences[1]?.startsWith("Ти відчуваєш"), `${label}: second result sentence needs an explicit feeling`);
-  assert.match(result, POSITIVE_EMOTION, `${label}: result needs a positive emotional feeling`);
+  assert.ok(result.startsWith("Тепер ти відчуваєш "), `${label}: direct result prefix`);
+  assert.equal(sentenceCount(result), 1, `${label}: result must be exactly one sentence`);
+  assert.match(result, /полегшення/iu, `${label}: result must explicitly say relief`);
+  assert.doesNotMatch(result, FORBIDDEN_MEDICAL, `${label}: no medical guarantee`);
 }
 
 for (const themeKey of Object.keys(MAIN_BLOCK.subthemes)) {
   const states = PRIMARY_BODY_STATES[themeKey];
   const results = PRIMARY_BODY_RESULTS[themeKey];
-  assert.equal(states.length, 500);
-  assert.equal(results.length, 500);
-  assert.equal(new Set(states).size, 500);
-  assert.equal(new Set(results).size, 500);
+  assert.equal(states.length, 500, `${themeKey}: states length`);
+  assert.equal(results.length, 500, `${themeKey}: results length`);
+  assert.equal(new Set(states).size, 500, `${themeKey}: 500 unique states`);
+  assert.equal(new Set(results).size, 500, `${themeKey}: 500 unique results`);
 
   for (let index = 0; index < 500; index += 1) {
     assertDirectState(states[index], `${themeKey}/state/${index}`);
@@ -105,20 +105,23 @@ for (const themeKey of Object.keys(MAIN_BLOCK.subthemes)) {
   }
 
   for (const levelKey of Object.keys(MAIN_BLOCK.subthemes[themeKey].levels)) {
-    const visibleStates = new Set();
-    const visibleResults = new Set();
     const source = {
       problems: getLevelProblemPool(themeKey, levelKey),
       gains: getLevelSecondaryGainPool(themeKey, levelKey),
       meanings: getLevelLifeMeaningPool(themeKey, levelKey),
       solutions: MAIN_BLOCK.subthemes[themeKey].pools?.affirmations || []
     };
+    const visibleStates = new Set();
+    const visibleResults = new Set();
+    const visibleGuides = new Set();
+
     for (let index = 0; index < 500; index += 1) {
       const rendered = buildResult(themeKey, levelKey, index);
       const state = sectionBetween(rendered.text, "🌿🧠 *Стан*\n", "\n\n🧩⚠️");
       const result = sectionBetween(rendered.text, "✨ *Тепер ти відчуваєш*\n", null);
-      assertDirectState(state, `${themeKey}/${levelKey}/rendered-state/${index}`);
-      assertDirectResult(result, `${themeKey}/${levelKey}/rendered-result/${index}`);
+      assertDirectState(state, `${themeKey}/${levelKey}/state/${index}`);
+      assertDirectResult(result, `${themeKey}/${levelKey}/result/${index}`);
+      assert.ok(sharesBodyZone(state, result), `${themeKey}/${levelKey}/${index}: rendered body zone`);
       assertLockedSections(
         rendered.text,
         {
@@ -132,13 +135,22 @@ for (const themeKey of Object.keys(MAIN_BLOCK.subthemes)) {
       visibleStates.add(state);
       visibleResults.add(result);
 
-      const guide = buildFeelingGuide(themeKey, levelKey, index).text;
-      const guidedResult = sectionBetween(guide, "✨ *Тепер ти відчуваєш*\n", null);
-      assert.match(guidedResult, PHYSICAL_RELIEF, `${themeKey}/${levelKey}/guide/${index}: physical relief`);
-      assert.match(guidedResult, POSITIVE_EMOTION, `${themeKey}/${levelKey}/guide/${index}: positive feeling`);
+      const guide = buildFeelingGuide(themeKey, levelKey, index);
+      assert.ok(guide);
+      assert.equal(guide.variantIndex, index);
+      const guidedState = sectionBetween(guide.text, "💭 *Ти так це відчуваєш?*\n\n", "\n\n✨ *Тепер ти відчуваєш*");
+      const guidedResult = sectionBetween(guide.text, "✨ *Тепер ти відчуваєш*\n", null);
+      assert.equal(guidedState, states[index], `${themeKey}/${levelKey}/guide/${index}: exact state`);
+      assert.equal(guidedResult, results[index], `${themeKey}/${levelKey}/guide/${index}: exact result`);
+      assertDirectState(guidedState, `${themeKey}/${levelKey}/guide-state/${index}`);
+      assertDirectResult(guidedResult, `${themeKey}/${levelKey}/guide-result/${index}`);
+      assert.doesNotMatch(guide.text, /Крок\s*[1-4]|🔑\s*\*Рішення\*|Давай на кілька хвилин|Поміть|Зверни увагу/iu);
+      visibleGuides.add(guide.text);
     }
+
     assert.equal(visibleStates.size, 500, `${themeKey}/${levelKey}: rendered states unique`);
     assert.equal(visibleResults.size, 500, `${themeKey}/${levelKey}: rendered results unique`);
+    assert.equal(visibleGuides.size, 500, `${themeKey}/${levelKey}: guided variants unique`);
   }
 }
 
@@ -146,6 +158,7 @@ assert.equal(GENERIC_DIRECT_STATES.length, 500);
 assert.equal(GENERIC_DIRECT_RESULTS.length, 500);
 assert.equal(new Set(GENERIC_DIRECT_STATES).size, 500);
 assert.equal(new Set(GENERIC_DIRECT_RESULTS).size, 500);
+
 for (let index = 0; index < 500; index += 1) {
   assertDirectState(GENERIC_DIRECT_STATES[index], `generic/state/${index}`);
   assertDirectResult(GENERIC_DIRECT_RESULTS[index], `generic/result/${index}`);
@@ -154,18 +167,21 @@ for (let index = 0; index < 500; index += 1) {
 
 let genericLevels = 0;
 for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
+  if (block.enabled === false) continue;
   for (const [themeKey, theme] of Object.entries(block.subthemes || {})) {
     for (const levelKey of Object.keys(theme.levels || {})) {
       genericLevels += 1;
+      const source = buildGenericPools(theme.levels[levelKey]);
       const visibleStates = new Set();
       const visibleResults = new Set();
-      const source = buildGenericPools(theme.levels[levelKey]);
+
       for (let index = 0; index < 500; index += 1) {
         const rendered = buildGenericResult(blockKey, themeKey, levelKey, index);
         const state = sectionBetween(rendered.text, "🌿🧠 *Стан*\n", "\n\n🧩⚠️");
         const result = sectionBetween(rendered.text, "✨ *Тепер ти відчуваєш*\n", null);
         assertDirectState(state, `${blockKey}/${themeKey}/${levelKey}/state/${index}`);
         assertDirectResult(result, `${blockKey}/${themeKey}/${levelKey}/result/${index}`);
+        assert.ok(sharesBodyZone(state, result), `${blockKey}/${themeKey}/${levelKey}/${index}: rendered body zone`);
         assertLockedSections(
           rendered.text,
           {
@@ -179,6 +195,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         visibleStates.add(state);
         visibleResults.add(result);
       }
+
       assert.equal(visibleStates.size, 500, `${blockKey}/${themeKey}/${levelKey}: rendered states unique`);
       assert.equal(visibleResults.size, 500, `${blockKey}/${themeKey}/${levelKey}: rendered results unique`);
     }
@@ -186,4 +203,4 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 }
 
 assert.ok(genericLevels > 0);
-console.log(`✅ Direct body copy: only state/result change; four non-body sections stay locked across primary and ${genericLevels} generic levels`);
+console.log(`✅ Direct body-only copy: 500 one-sentence states/results, 500 minimal guided variants, non-body sections locked across ${genericLevels} generic levels`);
