@@ -1,5 +1,6 @@
 import { getBlock, getBlockSubtheme } from "./navigation.js";
 import { buildGenericPools } from "./generic-500-pools.js";
+import { GENERIC_DIRECT_RESULTS, GENERIC_DIRECT_STATES } from "./direct-body-copy.js";
 
 const POOL_SIZE = 500;
 const cleanName = (name = "") => String(name || "").replace(/^\d+\s*·\s*/u, "").trim();
@@ -19,12 +20,12 @@ export function buildGenericResult(blockKey, themeKey, levelKey, requestedVarian
 
   const pools = buildGenericPools(level);
   const index = normalizeVariant(requestedVariant);
-  const state = pools.states[index] || pools.states[0] || "";
+  const state = GENERIC_DIRECT_STATES[index] || GENERIC_DIRECT_STATES[0] || "";
   const problem = pools.problems[index] || pools.problems[0] || "";
   const gain = pools.gains[index] || pools.gains[0] || "";
   const meaning = pools.meanings[index] || pools.meanings[0] || "";
   const solution = pools.solutions[index] || pools.solutions[0] || "";
-  const afterState = pools.results[index] || pools.results[0] || "";
+  const afterState = GENERIC_DIRECT_RESULTS[index] || GENERIC_DIRECT_RESULTS[0] || "";
   const count = readCount();
   const problemName = cleanName(level.name) || level.articleTitle;
 
