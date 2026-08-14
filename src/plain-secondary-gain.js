@@ -102,13 +102,13 @@ export function secondaryGainCore(text = "") {
   return secondaryGainParts(text).core;
 }
 
-export function buildPlainSecondaryGain(text = "") {
+export function buildPlainSecondaryGain(text = "", forcedBenefit = null) {
   const { core, variant } = secondaryGainParts(text);
   if (!core) {
     return "Ця проблема дає тобі коротке відчуття полегшення й безпеки. Тому тобі вигідно залишити все як є прямо зараз.";
   }
 
-  const benefit = benefitFromCore(core);
+  const benefit = forcedBenefit || benefitFromCore(core);
   const opener = BENEFIT_OPENERS[variant] || BENEFIT_OPENERS[0];
   return `${sentence(opener.replaceAll("{benefit}", benefit))} ${sentence(`Тому тобі вигідно ${core}`)}`;
 }
@@ -116,7 +116,13 @@ export function buildPlainSecondaryGain(text = "") {
 export function getDirectSecondaryGainPool(themeKey, levelKey) {
   const cacheKey = `${themeKey}.${levelKey}`;
   if (directPoolCache.has(cacheKey)) return directPoolCache.get(cacheKey);
-  const pool = getLevelSecondaryGainPool(themeKey, levelKey).map(buildPlainSecondaryGain);
+  const source = getLevelSecondaryGainPool(themeKey, levelKey);
+  const pool = source.map((text, index) => {
+    const cleanupStability = cacheKey === "lazy.l6" && index < 250
+      ? "відчуття стабільності й передбачуваності"
+      : null;
+    return buildPlainSecondaryGain(text, cleanupStability);
+  });
   if (pool.length !== 500 || new Set(pool).size !== 500) {
     throw new Error(`${cacheKey}: secondary gain pool must have 500 unique visible texts`);
   }
