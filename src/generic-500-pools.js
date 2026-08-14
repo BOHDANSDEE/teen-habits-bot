@@ -328,7 +328,7 @@ function makeBodyStates(topic) {
 
 function makeResults() {
   return make500(BODY_RELIEFS, RESULT_CONTEXTS, (relief, context) =>
-    `Тепер ти відчуваєш ${relief}. ${sentence(context)}`
+    `Тепер ти відчуваєш, ${relief}. ${sentence(context)}`
   );
 }
 
