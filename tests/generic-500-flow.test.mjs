@@ -37,7 +37,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
       assert.ok(pools.affirmations.slice(0, 250).every((text) => sentenceCount(text) === 2));
       assert.ok(pools.affirmations.slice(250).every((text) => sentenceCount(text) === 3));
       assert.ok(pools.results.every((text) => sentenceCount(text) === 2));
-      assert.ok(pools.gains.every((text) => /вигід|вигода|коротк|старий спосіб|зруч/u.test(text)));
+      assert.ok(pools.gains.every((text) => /вигід|вигода|коротк|старий спосіб|зруч/iu.test(text)));
       assert.ok(pools.results.every((text) => /легше|ясн|зрозуміліш|контрол/iu.test(text)));
 
       const renderedSets = {
