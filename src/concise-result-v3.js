@@ -3,9 +3,17 @@ import { getLevelLifeMeaningPool, getLevelSecondaryGainPool } from "./level-cont
 import { BODY_STATE_POOLS } from "./body-state-pools.js";
 import { getLevelProblemPool } from "./problem-pools.js";
 import { LAZY_AFTER_STATES } from "./after-state-lazy.js";
+import { APATHY_AFTER_STATES } from "./after-state-apathy.js";
+import { PROCRASTINATION_AFTER_STATES } from "./after-state-procrastination.js";
 import { buildPlainSecondaryGain } from "./plain-secondary-gain.js";
 
 const REFERRAL = /фахів|лікар|професійн\w*\s+оцінк|медичн\w*\s+оцінк/iu;
+
+const AFTER_STATE_POOLS = {
+  lazy: LAZY_AFTER_STATES,
+  apathy: APATHY_AFTER_STATES,
+  procrastination: PROCRASTINATION_AFTER_STATES
+};
 
 const sentence = (text = "") => {
   const value = String(text || "").trim();
@@ -44,16 +52,20 @@ function nextTarget(themeKey) {
 }
 
 const readCount = () => 3 + Math.floor(Math.random() * 7);
+const bodyVariantIndex = () => Math.floor(Math.random() * 500);
 
 export function buildResult(themeKey, levelKey) {
   const theme = getSubtheme(themeKey);
   const level = getLevel(themeKey, levelKey);
   if (!theme || !level) return null;
 
-  const state = pickTwoSafe(BODY_STATE_POOLS[themeKey] || [], [
-    "У тілі ти помічаєш втому або напругу.",
-    "Найсильніше це відчувається перед потрібною дією."
-  ]).join(" ");
+  const bodyPool = BODY_STATE_POOLS[themeKey] || [];
+  const afterPool = AFTER_STATE_POOLS[themeKey] || [];
+  const bodyIndex = bodyVariantIndex();
+  const state = sentence(
+    bodyPool[bodyIndex] ||
+      "Ти відчуваєш напругу або важкість у тілі перед потрібною дією."
+  );
 
   const problem = pickSafe(
     getLevelProblemPool(themeKey, levelKey),
@@ -76,11 +88,10 @@ export function buildResult(themeKey, levelKey) {
     "Сьогодні я підтверджую це рішення дією."
   ]).join(" ");
 
-  const afterStates = pickTwoSafe(LAZY_AFTER_STATES, [
-    "Після рішення тіло відчувається спокійнішим.",
-    "Рухи відчуваються вільнішими для наступного кроку."
-  ]);
-  const afterState = afterStates.join(" ");
+  const afterState = sentence(
+    afterPool[bodyIndex] ||
+      "Тепер ти відчуваєш, що тіло стало трохи м’якшим, а наступний рух — простішим."
+  );
   const count = readCount();
   const next = nextTarget(themeKey);
   const problemName = cleanName(level.name) || level.articleTitle;
@@ -92,9 +103,10 @@ export function buildResult(themeKey, levelKey) {
     articleTitle: level.articleTitle,
     next,
     readCount: count,
+    bodyVariantIndex: bodyIndex,
     afterState,
-    afterStates,
-    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${gain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${count} разів.\n\n✨ *Результат*\n${afterState}`
+    afterStates: [afterState],
+    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${gain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑✨ *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${count} разів.\n\n✨ *Тепер ти відчуваєш*\n${afterState}`
   };
 }
 
