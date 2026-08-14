@@ -54,7 +54,7 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
 
   assert.equal(afterStates.length, 500);
   assert.equal(new Set(afterStates).size, 500);
-  assert.ok(afterStates.every((text) => text.startsWith("Тепер ти відчуваєш ")));
+  assert.ok(afterStates.every((text) => text.startsWith("Тепер ти відчуваєш")));
 
   for (let index = 0; index < 500; index += 1) {
     assert.ok(sharesBodyZone(states[index], afterStates[index]), `${themeKey}[${index}] must keep the same body zone`);
@@ -86,7 +86,7 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
       const state = sectionBetween(result.text, "🌿🧠 *Стан*\n", "\n\n🧩⚠️");
       const final = sectionBetween(result.text, "✨ *Тепер ти відчуваєш*\n", null);
       assert.ok(state.startsWith("Ти відчуваєш "));
-      assert.ok(final.startsWith("Тепер ти відчуваєш "));
+      assert.ok(final.startsWith("Тепер ти відчуваєш"));
       assert.ok(sharesBodyZone(state, final), `${themeKey}/${levelKey}: short card must keep body zone`);
       assert.ok(result.text.includes("🧩⚠️ *Проблема —"));
       assert.ok(result.text.includes("🪞🎁 *Вторинна вигода*"));
@@ -117,7 +117,7 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
       assert.match(step2, /вдих|видих|дихан/iu);
       assert.match(step3, /стоп|спин|поверх|сидін|стіл|колін|опор|ваг/iu);
       assert.match(step4, /рух|опуст|розтис|перевед|морг|змін|випрям|крок|поверн|притис/iu);
-      assert.ok(final.startsWith("Тепер ти відчуваєш "));
+      assert.ok(final.startsWith("Тепер ти відчуваєш"));
       assert.ok(sharesBodyZone(opening, final), "guided final must keep opening body zone");
       assert.match(text, /🔑 \*Рішення\*/u);
       assert.doesNotMatch(text, /\bСенс\s*:/iu);
@@ -131,7 +131,7 @@ const firstThemeKey = Object.keys(MAIN_BLOCK.subthemes)[0];
 const firstLevelKey = Object.keys(MAIN_BLOCK.subthemes[firstThemeKey].levels)[0];
 const continuation = buildContinuation(firstThemeKey, firstThemeKey, firstLevelKey);
 assert.match(continuation.text, /^💭 \*Ти так це відчуваєш\?\*\n\nТи відчуваєш /u);
-assert.match(continuation.text, /✨ \*Тепер ти відчуваєш\*\nТепер ти відчуваєш /u);
+assert.match(continuation.text, /✨ \*Тепер ти відчуваєш\*\nТепер ти відчуваєш/u);
 assert.equal(continuation.themeKey, firstThemeKey);
 assert.equal(continuation.levelKey, firstLevelKey);
 assert.ok(continuation.next);
