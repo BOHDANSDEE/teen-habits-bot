@@ -4,8 +4,7 @@ import { FUTURE_BLOCKS } from "../src/future-blocks.js";
 import { buildResult } from "../src/renderer.js";
 import { buildGenericResult } from "../src/generic-result.js";
 
-const FORBIDDEN_OLD = /🌿🧠 \*Стан\*|Ти відчуваєш (?:легкий |слабкий |помітний |виражений )?(?:біль|важкість|напругу|втому|тиск)|💭 \*Ти так це відчуваєш\?\*|✨ \*Тепер ти відчуваєш\*|Тіло:\s*Інтуїтивне/iu;
-const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
+const FORBIDDEN_OLD = /🌿🧠 \*Стан\*|(?:^|\n)Ти відчуваєш (?:легкий |слабкий |помітний |виражений )?(?:біль(?=\s|[.,!?…]|$)|важкість|напругу|втому|тиск)|💭 \*Ти так це відчуваєш\?\*|✨ \*Тепер ти відчуваєш\*|Тіло:\s*Інтуїтивне/imu;
 
 const cleanupLevel = MAIN_BLOCK.subthemes.lazy.levels.l6;
 assert.ok(cleanupLevel, "lazy.l6 cleanup level must exist");
@@ -24,7 +23,6 @@ for (const item of cleanupTexts) {
   const resultStart = item.text.indexOf("✨ *Результат*\n");
   assert.ok(resultStart >= 0);
   const after = item.text.slice(resultStart + "✨ *Результат*\n".length);
-  const nextTitle = item.next?.articleTitle ? item.next.articleTitle : "";
   assert.ok(/Тепер /u.test(after));
   assert.ok(item.text.includes("🔑 *Афірмація*"));
   assert.ok(item.text.includes("🪞 *Вторинна вигода*"));
