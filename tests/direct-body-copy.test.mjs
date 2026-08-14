@@ -15,7 +15,7 @@ import { buildPlainSecondaryGain } from "../src/plain-secondary-gain.js";
 import { getLevelProblemPool } from "../src/problem-pools.js";
 import { buildResult } from "../src/renderer.js";
 
-const DIRECT_PHYSICAL = /біль|важк|мляв|втом|тиск|напруг|стиск|скут|прохолод|холод|дихан|неспокій/iu;
+const DIRECT_PHYSICAL = /біль|важк|мляв|втом|тиск|напруг|стиск|стиснут|скут|прохолод|холод|дихан|неспокій/iu;
 const FORBIDDEN_MEDICAL = /кровообіг\s+(?:покращ|нормаліз)|тиск\s+нормаліз|нервов\w*\s+систем\w*\s+вилікувал|судин\w*\s+працю\w*\s+краще/iu;
 
 const BODY_ZONES = [
