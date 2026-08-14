@@ -15,24 +15,36 @@ import { buildPlainSecondaryGain } from "../src/plain-secondary-gain.js";
 import { getLevelProblemPool } from "../src/problem-pools.js";
 import { buildResult } from "../src/renderer.js";
 
-const DIRECT_PHYSICAL = /біль|важк|мляв|втом|тиск|напруг|стиск|стиснут|скут|прохолод|холод|дихан|неспокій/iu;
+const DIRECT_PHYSICAL = /біль|важк|напруг|втом|тиск/iu;
 const FORBIDDEN_MEDICAL = /кровообіг\s+(?:покращ|нормаліз)|тиск\s+нормаліз|нервов\w*\s+систем\w*\s+вилікувал|судин\w*\s+працю\w*\s+краще/iu;
+const FORBIDDEN_EXTRA_CONTEXT = /\bколи\b|\bпісля\b|під час|підвод|підвести|рух|сидін|стоя|положенн|пауза|наступн|день|прямо зараз/iu;
 
 const BODY_ZONES = [
-  /скрон/iu,
-  /потилиц/iu,
-  /лоб/iu,
-  /оч|повік/iu,
-  /щелеп/iu,
-  /ши/iu,
-  /плеч/iu,
-  /груд|ключиц|дих/iu,
-  /спин|лопат|поперек/iu,
-  /передпліч|зап’яст|зап'яст|кист|долон|пальц|рук/iu,
-  /жив/iu,
-  /таз/iu,
-  /стегн|литк|щиколот|п’ят|п'ят|колін|стоп|ног/iu,
-  /тіл|м’яз|м'яз/iu
+  "у голові",
+  "у лобі",
+  "у скронях",
+  "у потилиці",
+  "в очах",
+  "у щелепі",
+  "у шиї",
+  "у плечах",
+  "між лопатками",
+  "у спині",
+  "у попереку",
+  "у грудях",
+  "у животі",
+  "у передпліччях",
+  "у зап’ястях",
+  "у долонях",
+  "у пальцях",
+  "у руках",
+  "у стегнах",
+  "у колінах",
+  "у литках",
+  "у щиколотках",
+  "у п’ятах",
+  "у стопах",
+  "у ногах"
 ];
 
 const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
@@ -43,8 +55,8 @@ function sentence(text = "") {
   return /[.!?…]$/u.test(value) ? value : `${value}.`;
 }
 
-function sharesBodyZone(a, b) {
-  return BODY_ZONES.some((pattern) => pattern.test(a) && pattern.test(b));
+function bodyZone(text = "") {
+  return BODY_ZONES.find((zone) => String(text).includes(zone)) || null;
 }
 
 function sectionBetween(text, start, end) {
@@ -80,14 +92,26 @@ function assertDirectState(state, label) {
   assert.ok(state.startsWith("Ти відчуваєш "), `${label}: direct state prefix`);
   assert.equal(sentenceCount(state), 1, `${label}: state must be exactly one sentence`);
   assert.match(state, DIRECT_PHYSICAL, `${label}: concrete physical sensation`);
+  assert.doesNotMatch(state, FORBIDDEN_EXTRA_CONTEXT, `${label}: no extra action/time context`);
   assert.doesNotMatch(state, FORBIDDEN_MEDICAL, `${label}: no medical guarantee`);
+  const zone = bodyZone(state);
+  assert.ok(zone, `${label}: known simple body zone`);
+  assert.ok(state.endsWith(`${zone}.`), `${label}: nothing after body zone`);
 }
 
 function assertDirectResult(result, label) {
   assert.ok(result.startsWith("Тепер ти відчуваєш "), `${label}: direct result prefix`);
   assert.equal(sentenceCount(result), 1, `${label}: result must be exactly one sentence`);
   assert.match(result, /полегшення/iu, `${label}: result must explicitly say relief`);
+  assert.doesNotMatch(result, FORBIDDEN_EXTRA_CONTEXT, `${label}: no extra action/time context`);
   assert.doesNotMatch(result, FORBIDDEN_MEDICAL, `${label}: no medical guarantee`);
+  const zone = bodyZone(result);
+  assert.ok(zone, `${label}: known simple body zone`);
+  assert.ok(result.endsWith(`${zone}.`), `${label}: nothing after body zone`);
+}
+
+function assertSameZone(state, result, label) {
+  assert.equal(bodyZone(state), bodyZone(result), `${label}: state/result must use exactly the same body zone`);
 }
 
 for (const themeKey of Object.keys(MAIN_BLOCK.subthemes)) {
@@ -101,7 +125,7 @@ for (const themeKey of Object.keys(MAIN_BLOCK.subthemes)) {
   for (let index = 0; index < 500; index += 1) {
     assertDirectState(states[index], `${themeKey}/state/${index}`);
     assertDirectResult(results[index], `${themeKey}/result/${index}`);
-    assert.ok(sharesBodyZone(states[index], results[index]), `${themeKey}/${index}: body zone must match`);
+    assertSameZone(states[index], results[index], `${themeKey}/${index}`);
   }
 
   for (const levelKey of Object.keys(MAIN_BLOCK.subthemes[themeKey].levels)) {
@@ -121,7 +145,7 @@ for (const themeKey of Object.keys(MAIN_BLOCK.subthemes)) {
       const result = sectionBetween(rendered.text, "✨ *Тепер ти відчуваєш*\n", null);
       assertDirectState(state, `${themeKey}/${levelKey}/state/${index}`);
       assertDirectResult(result, `${themeKey}/${levelKey}/result/${index}`);
-      assert.ok(sharesBodyZone(state, result), `${themeKey}/${levelKey}/${index}: rendered body zone`);
+      assertSameZone(state, result, `${themeKey}/${levelKey}/${index}`);
       assertLockedSections(
         rendered.text,
         {
@@ -138,7 +162,9 @@ for (const themeKey of Object.keys(MAIN_BLOCK.subthemes)) {
       const guide = buildFeelingGuide(themeKey, levelKey, index);
       assert.ok(guide);
       assert.equal(guide.variantIndex, index);
-      const guidedState = sectionBetween(guide.text, "💭 *Ти так це відчуваєш?*\n\n", "\n\n✨ *Тепер ти відчуваєш*");
+      assert.ok(guide.text.startsWith(`${states[index]}\n\n✨ *Тепер ти відчуваєш*\n`));
+      assert.doesNotMatch(guide.text, /💭|Ти так це відчуваєш\?/iu);
+      const guidedState = guide.text.split("\n\n✨ *Тепер ти відчуваєш*\n")[0].trim();
       const guidedResult = sectionBetween(guide.text, "✨ *Тепер ти відчуваєш*\n", null);
       assert.equal(guidedState, states[index], `${themeKey}/${levelKey}/guide/${index}: exact state`);
       assert.equal(guidedResult, results[index], `${themeKey}/${levelKey}/guide/${index}: exact result`);
@@ -162,7 +188,7 @@ assert.equal(new Set(GENERIC_DIRECT_RESULTS).size, 500);
 for (let index = 0; index < 500; index += 1) {
   assertDirectState(GENERIC_DIRECT_STATES[index], `generic/state/${index}`);
   assertDirectResult(GENERIC_DIRECT_RESULTS[index], `generic/result/${index}`);
-  assert.ok(sharesBodyZone(GENERIC_DIRECT_STATES[index], GENERIC_DIRECT_RESULTS[index]), `generic/${index}: body zone must match`);
+  assertSameZone(GENERIC_DIRECT_STATES[index], GENERIC_DIRECT_RESULTS[index], `generic/${index}`);
 }
 
 let genericLevels = 0;
@@ -181,7 +207,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         const result = sectionBetween(rendered.text, "✨ *Тепер ти відчуваєш*\n", null);
         assertDirectState(state, `${blockKey}/${themeKey}/${levelKey}/state/${index}`);
         assertDirectResult(result, `${blockKey}/${themeKey}/${levelKey}/result/${index}`);
-        assert.ok(sharesBodyZone(state, result), `${blockKey}/${themeKey}/${levelKey}/${index}: rendered body zone`);
+        assertSameZone(state, result, `${blockKey}/${themeKey}/${levelKey}/${index}`);
         assertLockedSections(
           rendered.text,
           {
@@ -203,4 +229,4 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 }
 
 assert.ok(genericLevels > 0);
-console.log(`✅ Direct body-only copy: 500 one-sentence states/results, 500 minimal guided variants, non-body sections locked across ${genericLevels} generic levels`);
+console.log(`✅ Direct body copy: 500 short states + 500 short reliefs; no extra context; no guided heading; non-body sections locked across ${genericLevels} generic levels`);
