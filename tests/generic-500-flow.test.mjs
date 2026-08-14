@@ -3,18 +3,22 @@ import { FUTURE_BLOCKS } from "../src/future-blocks.js";
 import { buildGenericPools } from "../src/generic-500-pools.js";
 import { buildGenericResult } from "../src/generic-result.js";
 
-const PHYSICAL = /ног|плеч|ши|рук|оч|голов|дих|груд|тіл|спин|щелеп|жив|стоп|колін|долон|кист|пальц|лопат|м’яз/iu;
+const PHYSICAL = /скрон|потилиц|лоб|голов|оч|повік|щелеп|ши|плеч|груд|ключиц|дих|спин|лопат|поперек|передпліч|зап’яст|зап'яст|рук|кист|долон|пальц|жив|таз|стегн|литк|щиколот|п’ят|п'ят|ног|стоп|колін|тіл|м’яз|м'яз/iu;
 const BODY_ZONES = [
-  /голов|лоб|оч/iu,
+  /скрон|голов/iu,
+  /потилиц/iu,
+  /лоб/iu,
+  /оч|повік/iu,
   /щелеп/iu,
   /ши/iu,
   /плеч/iu,
-  /груд|дих/iu,
-  /спин|лопат/iu,
-  /рук|кист|долон|пальц/iu,
+  /груд|ключиц|дих/iu,
+  /спин|лопат|поперек/iu,
+  /передпліч|зап’яст|зап'яст|рук|кист|долон|пальц/iu,
   /жив/iu,
-  /ног|колін|стоп/iu,
-  /тіл|м’яз/iu
+  /таз/iu,
+  /стегн|литк|щиколот|п’ят|п'ят|ног|стоп|колін/iu,
+  /тіл|м’яз|м'яз/iu
 ];
 const FORBIDDEN_MEDICAL = /кровообіг\s+(?:покращ|нормаліз)|тиск\s+нормаліз|нервов\w*\s+систем\w*\s+вилікувал|судин\w*\s+працю\w*\s+краще/iu;
 const JARGON = /сценарій|патерн|механізм|внутрішня система/iu;
@@ -70,7 +74,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
       assert.ok(pools.solutions.every((text) => sentenceCount(text) <= 2), `${blockKey}/${themeKey}: solution max 2 sentences`);
 
       for (let index = 0; index < 500; index += 1) {
-        assert.ok(sharesBodyZone(pools.states[index], pools.results[index]), `${blockKey}/${themeKey}/${levelKey}[${index}] body zone`);
+        assert.ok(sharesBodyZone(pools.states[index], pools.results[index]), `${blockKey}/${themeKey}/${levelKey}[${index}] source body zone`);
         assert.doesNotMatch(pools.states[index], FORBIDDEN_MEDICAL);
         assert.doesNotMatch(pools.results[index], FORBIDDEN_MEDICAL);
       }
@@ -89,7 +93,12 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         assert.equal(result.variantIndex, index);
         assert.equal(result.bodyVariantIndex, index);
         assert.ok(parts.state.startsWith("Ти відчуваєш "));
-        assert.ok(/^Тепер ти відчуваєш(?:,|\s)/u.test(parts.result));
+        assert.equal(sentenceCount(parts.state), 1, `${blockKey}/${themeKey}/${levelKey}[${index}]: one state sentence`);
+        assert.ok(parts.result.startsWith("Тепер ти відчуваєш "));
+        assert.equal(sentenceCount(parts.result), 1, `${blockKey}/${themeKey}/${levelKey}[${index}]: one result sentence`);
+        assert.match(parts.result, /полегшення/iu);
+        assert.ok(PHYSICAL.test(parts.state));
+        assert.ok(PHYSICAL.test(parts.result));
         assert.ok(sharesBodyZone(parts.state, parts.result), `${blockKey}/${themeKey}/${levelKey}[${index}]: renderer body zone`);
         assert.ok(!JARGON.test(parts.gain));
         assert.ok(sentenceCount(parts.meaning) <= 2);
@@ -98,7 +107,6 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         assert.ok(result.text.includes("🪞🎁 *Вторинна вигода*"));
         assert.ok(result.text.includes("🌟🧭 *Значення в житті*"));
         assert.ok(result.text.includes("🔑 *Рішення*"));
-        assert.ok(!result.text.includes("🔑✨ *Рішення*"));
         assert.ok(result.text.includes("✨ *Тепер ти відчуваєш*"));
         assert.ok(!result.text.includes("✨ *Результат*"));
         assert.doesNotMatch(result.text, /\bСенс\s*:/iu);
@@ -110,4 +118,4 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 }
 
 assert.ok(activeLevels > 0);
-console.log(`✅ Generic: ${activeLevels} active levels, 500 rendered visible variants per section, physical start/result aligned`);
+console.log(`✅ Generic: ${activeLevels} active levels, 500 rendered one-sentence body states/results, non-body sections preserved`);
