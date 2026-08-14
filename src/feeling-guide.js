@@ -27,6 +27,6 @@ export function buildFeelingGuide(themeKey, levelKey, requestedVariant = null) {
     variantIndex: index,
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
-    text: `💭 *Ти так це відчуваєш?*\n\n${intro} Давай пройдемо тему «${levelName}» не через довгі пояснення, а через кілька простих відчуттів.\n\n🔷 *Крок 1: Стан*\nЗверни увагу на ${anchor.notice}. ${image.state}\n\n🔷 *Крок 2: Дихання*\n${image.breath} Помічай навіть невелику різницю між напругою на початку й зараз.\n\n🔷 *Крок 3: Опора*\n${image.support} ${anchor.movement}.\n\n🔷 *Крок 4: Рух*\nНе потрібно робити великий ривок. Обери один невеликий рух, який реально можеш зробити після цього повідомлення.\n\n🔑 *Рішення*\n${solution}\n\n✨ *Результат*\n${anchor.release}. У тілі з’являється трохи більше простору для наступного кроку без зайвого поспіху.`
+    text: `💭 *Ти так це відчуваєш?*\n\n${anchor.start}\n\n${intro} Давай пройдемо тему «${levelName}» через кілька простих відчуттів у тілі.\n\n🔷 *Крок 1: Стан*\nЗатримай увагу на ${anchor.notice}. ${image.state}\n\n🔷 *Крок 2: Дихання*\n${image.breath} Помічай навіть невелику різницю між напругою на початку й зараз.\n\n🔷 *Крок 3: Опора*\n${image.support} ${anchor.movement}.\n\n🔷 *Крок 4: Рух*\nНе потрібно робити великий ривок. Обери один невеликий рух, який реально можеш зробити після цього повідомлення.\n\n🔑 *Рішення*\n${solution}\n\n✨ *Тепер ти відчуваєш*\n${anchor.release}. ${image.result}`
   };
 }
