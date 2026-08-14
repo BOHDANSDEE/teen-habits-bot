@@ -29,7 +29,8 @@ const BODY_ZONES = [
   /тіл|м’яз/iu
 ];
 
-const FORBIDDEN_MEDICAL = /кровообіг\s+(?:покращ|нормаліз)|тиск\s+нормаліз|нервов\w*\s+систем\w*\s+вилікувал/iu;
+const FORBIDDEN_MEDICAL = /кровообіг\s+(?:покращ|нормаліз)|тиск\s+нормаліз|нервов\w*\s+систем\w*\s+вилікувал|судин\w*\s+працю\w*\s+краще/iu;
+const JARGON = /сценарій|патерн|механізм|внутрішня система/iu;
 
 function sharesBodyZone(a, b) {
   return BODY_ZONES.some((pattern) => pattern.test(a) && pattern.test(b));
@@ -44,17 +45,33 @@ function sectionBetween(text, start, end) {
   return text.slice(bodyStart, to).trim();
 }
 
+function shortSections(text) {
+  const problemHeaderStart = text.indexOf("🧩⚠️ *Проблема —");
+  const problemBodyStart = text.indexOf("\n", problemHeaderStart) + 1;
+  const gainHeaderStart = text.indexOf("\n\n🪞🎁 *Вторинна вигода*", problemBodyStart);
+  return {
+    state: sectionBetween(text, "🌿🧠 *Стан*\n", "\n\n🧩⚠️"),
+    problem: text.slice(problemBodyStart, gainHeaderStart).trim(),
+    gain: sectionBetween(text, "🪞🎁 *Вторинна вигода*\n", "\n\n🌟🧭 *Значення в житті*"),
+    meaning: sectionBetween(text, "🌟🧭 *Значення в житті*\n", "\n\n🔑 *Рішення*"),
+    solution: sectionBetween(text, "🔑 *Рішення*\n", "\n\n🔁 Прочитай це рішення"),
+    result: sectionBetween(text, "✨ *Тепер ти відчуваєш*\n", null)
+  };
+}
+
+const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
+
 for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
   const states = BODY_STATE_POOLS[themeKey];
   const afterStates = AFTER_POOLS[themeKey];
 
-  assert.equal(states.length, 500);
-  assert.equal(new Set(states).size, 500);
+  assert.equal(states.length, 500, `${themeKey}: states length`);
+  assert.equal(new Set(states).size, 500, `${themeKey}: states visible unique`);
   assert.ok(states.every((text) => text.startsWith("Ти відчуваєш ")));
 
-  assert.equal(afterStates.length, 500);
-  assert.equal(new Set(afterStates).size, 500);
-  assert.ok(afterStates.every((text) => text.startsWith("Тепер ти відчуваєш")));
+  assert.equal(afterStates.length, 500, `${themeKey}: results length`);
+  assert.equal(new Set(afterStates).size, 500, `${themeKey}: results visible unique`);
+  assert.ok(afterStates.every((text) => /^Тепер ти відчуваєш(?:,|\s)/u.test(text)));
 
   for (let index = 0; index < 500; index += 1) {
     assert.ok(sharesBodyZone(states[index], afterStates[index]), `${themeKey}[${index}] must keep the same body zone`);
@@ -71,34 +88,41 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
     const plainGains = gains.map(buildPlainSecondaryGain);
     const meanings = getLevelLifeMeaningPool(themeKey, levelKey);
 
-    assert.equal(problems.length, 500);
-    assert.equal(new Set(problems).size, 500);
-    assert.equal(gains.length, 500);
-    assert.equal(new Set(gains).size, 500);
-    assert.equal(new Set(plainGains).size, 500);
-    assert.equal(meanings.length, 500);
-    assert.equal(new Set(meanings).size, 500);
+    for (const [name, pool] of Object.entries({ problems, gains, plainGains, meanings })) {
+      assert.equal(pool.length, 500, `${themeKey}/${levelKey}: ${name} length`);
+      assert.equal(new Set(pool).size, 500, `${themeKey}/${levelKey}: ${name} visible unique`);
+    }
+    assert.ok(plainGains.every((text) => !JARGON.test(text)), `${themeKey}/${levelKey}: secondary gain plain language`);
 
-    for (let sample = 0; sample < 20; sample += 1) {
-      const result = buildResult(themeKey, levelKey);
+    const rendered = Array.from({ length: 500 }, (_, index) => buildResult(themeKey, levelKey, index));
+    const visible = rendered.map((result) => shortSections(result.text));
+
+    for (const key of ["state", "problem", "gain", "meaning", "solution", "result"]) {
+      assert.equal(new Set(visible.map((parts) => parts[key])).size, 500, `${themeKey}/${levelKey}: ${key} rendered visible unique`);
+    }
+
+    for (let index = 0; index < 500; index += 1) {
+      const result = rendered[index];
+      const parts = visible[index];
       assert.ok(result);
-
-      const state = sectionBetween(result.text, "🌿🧠 *Стан*\n", "\n\n🧩⚠️");
-      const final = sectionBetween(result.text, "✨ *Тепер ти відчуваєш*\n", null);
-      assert.ok(state.startsWith("Ти відчуваєш "));
-      assert.ok(final.startsWith("Тепер ти відчуваєш"));
-      assert.ok(sharesBodyZone(state, final), `${themeKey}/${levelKey}: short card must keep body zone`);
+      assert.equal(result.variantIndex, index);
+      assert.equal(result.bodyVariantIndex, index);
+      assert.ok(parts.state.startsWith("Ти відчуваєш "));
+      assert.ok(/^Тепер ти відчуваєш(?:,|\s)/u.test(parts.result));
+      assert.ok(sharesBodyZone(parts.state, parts.result), `${themeKey}/${levelKey}[${index}]: short card keeps body zone`);
+      assert.ok(!JARGON.test(parts.gain), `${themeKey}/${levelKey}[${index}]: gain jargon`);
+      assert.ok(sentenceCount(parts.meaning) <= 2, `${themeKey}/${levelKey}[${index}]: meaning max 2 sentences`);
+      assert.ok(sentenceCount(parts.solution) <= 2, `${themeKey}/${levelKey}[${index}]: solution max 2 sentences`);
       assert.ok(result.text.includes("🧩⚠️ *Проблема —"));
       assert.ok(result.text.includes("🪞🎁 *Вторинна вигода*"));
       assert.ok(result.text.includes("🌟🧭 *Значення в житті*"));
-      assert.ok(result.text.includes("🔑✨ *Рішення*"));
+      assert.ok(result.text.includes("🔑 *Рішення*"));
+      assert.ok(!result.text.includes("🔑✨ *Рішення*"));
       assert.ok(result.text.includes("✨ *Тепер ти відчуваєш*"));
       assert.ok(!result.text.includes("✨ *Результат*"));
       assert.doesNotMatch(result.text, /\bСенс\s*:/iu);
       assert.doesNotMatch(result.text, FORBIDDEN_MEDICAL);
-      const gain = result.text.split("🪞🎁 *Вторинна вигода*")[1].split("🌟🧭")[0];
-      assert.ok(!/сценарій|патерн|механізм|внутрішня система/iu.test(gain));
-      assert.ok(result.text.length < 4096);
+      assert.ok(result.text.length < 4096, `${themeKey}/${levelKey}[${index}]: Telegram limit`);
     }
 
     const guides = Array.from({ length: 500 }, (_, index) => buildFeelingGuide(themeKey, levelKey, index).text);
@@ -111,14 +135,16 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
       const step2 = sectionBetween(text, "🔷 *Крок 2: Дихання*\n", "\n\n🔷 *Крок 3: Опора*");
       const step3 = sectionBetween(text, "🔷 *Крок 3: Опора*\n", "\n\n🔷 *Крок 4: Рух*");
       const step4 = sectionBetween(text, "🔷 *Крок 4: Рух*\n", "\n\n🔑 *Рішення*");
+      const solution = sectionBetween(text, "🔑 *Рішення*\n", "\n\n✨ *Тепер ти відчуваєш*");
       const final = sectionBetween(text, "✨ *Тепер ти відчуваєш*\n", null);
 
       assert.ok(sharesBodyZone(opening, step1), "guided step 1 must keep opening body zone");
       assert.match(step2, /вдих|видих|дихан/iu);
       assert.match(step3, /стоп|спин|поверх|сидін|стіл|колін|опор|ваг/iu);
       assert.match(step4, /рух|опуст|розтис|перевед|морг|змін|випрям|крок|поверн|притис/iu);
-      assert.ok(final.startsWith("Тепер ти відчуваєш"));
+      assert.ok(/^Тепер ти відчуваєш(?:,|\s)/u.test(final));
       assert.ok(sharesBodyZone(opening, final), "guided final must keep opening body zone");
+      assert.ok(sentenceCount(solution) <= 2, "guided solution max 2 sentences");
       assert.match(text, /🔑 \*Рішення\*/u);
       assert.doesNotMatch(text, /\bСенс\s*:/iu);
       assert.doesNotMatch(text, FORBIDDEN_MEDICAL);
@@ -131,10 +157,10 @@ const firstThemeKey = Object.keys(MAIN_BLOCK.subthemes)[0];
 const firstLevelKey = Object.keys(MAIN_BLOCK.subthemes[firstThemeKey].levels)[0];
 const continuation = buildContinuation(firstThemeKey, firstThemeKey, firstLevelKey);
 assert.match(continuation.text, /^💭 \*Ти так це відчуваєш\?\*\n\nТи відчуваєш /u);
-assert.match(continuation.text, /✨ \*Тепер ти відчуваєш\*\nТепер ти відчуваєш/u);
+assert.match(continuation.text, /✨ \*Тепер ти відчуваєш\*\nТепер ти відчуваєш(?:,|\s)/u);
 assert.equal(continuation.themeKey, firstThemeKey);
 assert.equal(continuation.levelKey, firstLevelKey);
 assert.ok(continuation.next);
 assert.ok(continuation.text.length < 4096);
 
-console.log("✅ Primary: 500 unique visible pools + body-consistent guided/short results passed");
+console.log("✅ Primary: 500 rendered visible variants per section + body-consistent guided flow passed");
