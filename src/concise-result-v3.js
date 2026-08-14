@@ -1,26 +1,21 @@
 import { getLevel, getRandomLevelKey, getRandomRelatedTheme, getSubtheme } from "./content.js";
-import { getLevelLifeMeaningPool, getLevelSecondaryGainPool } from "./level-context-pools.js";
-import { BODY_STATE_POOLS } from "./body-state-pools.js";
 import { getLevelProblemPool } from "./problem-pools.js";
-import { LAZY_AFTER_STATES } from "./after-state-lazy.js";
-import { APATHY_AFTER_STATES } from "./after-state-apathy.js";
-import { PROCRASTINATION_AFTER_STATES } from "./after-state-procrastination.js";
-import { buildPlainSecondaryGain } from "./plain-secondary-gain.js";
+import { getDirectSecondaryGainPool } from "./plain-secondary-gain.js";
+import { getDirectLifeMeaningPool } from "./life-meaning-pools.js";
+import {
+  buildLevelAffirmationPool,
+  buildLevelResultPool,
+  buildNextPreview,
+  cleanLevelName
+} from "./level-output-pools.js";
 
 const POOL_SIZE = 500;
-const AFTER_STATE_POOLS = {
-  lazy: LAZY_AFTER_STATES,
-  apathy: APATHY_AFTER_STATES,
-  procrastination: PROCRASTINATION_AFTER_STATES
-};
 
 const sentence = (text = "") => {
   const value = String(text || "").trim();
   if (!value) return "";
   return /[.!?…]$/u.test(value) ? value : `${value}.`;
 };
-
-const cleanName = (name = "") => String(name || "").replace(/^\d+\s*·\s*/u, "").trim();
 
 function normalizeVariant(requestedVariant) {
   return Number.isInteger(requestedVariant)
@@ -43,7 +38,8 @@ function nextTarget(themeKey) {
     levelKey: nextLevelKey,
     themeName: theme.name,
     articleTitle: level.articleTitle,
-    summary: level.summary
+    summary: level.summary,
+    level
   };
 }
 
@@ -55,53 +51,56 @@ export function buildResult(themeKey, levelKey, requestedVariant = null) {
   if (!theme || !level) return null;
 
   const index = normalizeVariant(requestedVariant);
-  const state = takeVisible(
-    BODY_STATE_POOLS[themeKey] || [],
-    index,
-    "Ти відчуваєш напругу або важкість у тілі перед потрібною дією."
-  );
+  const problemName = cleanLevelName(level.name || level.articleTitle);
   const problem = takeVisible(
     getLevelProblemPool(themeKey, levelKey),
     index,
-    `У тебе це проявляється так: ${cleanName(level.name)}. Через це потрібний крок знову відкладається.`
+    `Ти регулярно стикаєшся з проблемою «${problemName}». Через це потрібна зміна відкладається.`
   );
-  const gainRaw = takeVisible(
-    getLevelSecondaryGainPool(themeKey, levelKey),
+  const gain = takeVisible(
+    getDirectSecondaryGainPool(themeKey, levelKey),
     index,
-    "На короткий час тобі стає легше, бо не треба починати прямо зараз."
+    "Ця проблема дає тобі коротке відчуття полегшення й безпеки. Тому тобі вигідно залишити все як є прямо зараз."
   );
-  const gain = buildPlainSecondaryGain(gainRaw);
   const meaning = takeVisible(
-    getLevelLifeMeaningPool(themeKey, levelKey),
+    getDirectLifeMeaningPool(themeKey, levelKey),
     index,
-    "У житті це повторюється у твоїх рішеннях і забирає частину уваги."
+    "Через цю проблему важливі справи отримують менше уваги."
   );
-  const solution = takeVisible(
-    theme.pools?.affirmations || [],
+  const affirmation = takeVisible(
+    buildLevelAffirmationPool(level),
     index,
-    "Я дозволяю собі не вирішувати все одразу. Я обираю один спокійний крок."
+    "Я можу змінювати цю проблему без тиску на себе. Я обираю один конкретний крок."
   );
-  const afterState = takeVisible(
-    AFTER_STATE_POOLS[themeKey] || [],
+  const resultText = takeVisible(
+    buildLevelResultPool(level),
     index,
-    "Тепер ти відчуваєш, що тіло стало трохи м’якшим, а наступний рух — простішим."
+    `Тепер тобі легше працювати з проблемою «${problemName}». Ти бачиш наступний крок чіткіше.`
   );
   const count = readCount();
-  const next = nextTarget(themeKey);
-  const problemName = cleanName(level.name) || level.articleTitle;
+  const nextWithLevel = nextTarget(themeKey);
+  const nextPreview = nextWithLevel ? buildNextPreview(nextWithLevel.level, index) : null;
+  const next = nextWithLevel
+    ? {
+        themeKey: nextWithLevel.themeKey,
+        levelKey: nextWithLevel.levelKey,
+        themeName: nextWithLevel.themeName,
+        articleTitle: nextWithLevel.articleTitle,
+        summary: nextWithLevel.summary
+      }
+    : null;
+  const nextBlock = nextPreview ? `\n\n${nextPreview.title}\n${nextPreview.text}` : "";
 
   return {
     themeKey,
     levelKey,
     variantIndex: index,
-    bodyVariantIndex: index,
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
     next,
     readCount: count,
-    afterState,
-    afterStates: [afterState],
-    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${gain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑 *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${count} разів.\n\n✨ *Тепер ти відчуваєш*\n${afterState}`
+    resultText,
+    text: `📖 *Інструкція:* Прочитай текст повільно від початку до кінця.\n\n🔎 *Проблема: ${problemName}*\n\n🔹 *Проблема*\n${problem}\n\n🪞 *Вторинна вигода*\n${gain}\n\n🌟 *Значення в житті*\n${meaning}\n\n🔑 *Афірмація*\n${affirmation}\n\n🔁 Повтори афірмацію ${count} разів.\n\n✨ *Результат*\n${resultText}${nextBlock}`
   };
 }
 

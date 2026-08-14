@@ -1,9 +1,8 @@
 import { getBlock, getBlockSubtheme } from "./navigation.js";
 import { buildGenericPools } from "./generic-500-pools.js";
-import { GENERIC_DIRECT_RESULTS, GENERIC_DIRECT_STATES } from "./direct-body-copy.js";
+import { cleanLevelName } from "./level-output-pools.js";
 
 const POOL_SIZE = 500;
-const cleanName = (name = "") => String(name || "").replace(/^\d+\s*·\s*/u, "").trim();
 const readCount = () => 3 + Math.floor(Math.random() * 7);
 
 function normalizeVariant(requestedVariant) {
@@ -20,25 +19,23 @@ export function buildGenericResult(blockKey, themeKey, levelKey, requestedVarian
 
   const pools = buildGenericPools(level);
   const index = normalizeVariant(requestedVariant);
-  const state = GENERIC_DIRECT_STATES[index] || GENERIC_DIRECT_STATES[0] || "";
   const problem = pools.problems[index] || pools.problems[0] || "";
   const gain = pools.gains[index] || pools.gains[0] || "";
   const meaning = pools.meanings[index] || pools.meanings[0] || "";
-  const solution = pools.solutions[index] || pools.solutions[0] || "";
-  const afterState = GENERIC_DIRECT_RESULTS[index] || GENERIC_DIRECT_RESULTS[0] || "";
+  const affirmation = pools.affirmations[index] || pools.affirmations[0] || "";
+  const resultText = pools.results[index] || pools.results[0] || "";
   const count = readCount();
-  const problemName = cleanName(level.name) || level.articleTitle;
+  const problemName = cleanLevelName(level.name || level.articleTitle);
 
   return {
     blockKey,
     themeKey,
     levelKey,
     variantIndex: index,
-    bodyVariantIndex: index,
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
     readCount: count,
-    afterState,
-    text: `🌿🧠 *Стан*\n${state}\n\n🧩⚠️ *Проблема — ${problemName}*\n${problem}\n\n🪞🎁 *Вторинна вигода*\n${gain}\n\n🌟🧭 *Значення в житті*\n${meaning}\n\n🔑 *Рішення*\n${solution}\n\n🔁 Прочитай це рішення ${count} разів.\n\n✨ *Тепер ти відчуваєш*\n${afterState}`
+    resultText,
+    text: `📖 *Інструкція:* Прочитай текст повільно від початку до кінця.\n\n🔎 *Проблема: ${problemName}*\n\n🔹 *Проблема*\n${problem}\n\n🪞 *Вторинна вигода*\n${gain}\n\n🌟 *Значення в житті*\n${meaning}\n\n🔑 *Афірмація*\n${affirmation}\n\n🔁 Повтори афірмацію ${count} разів.\n\n✨ *Результат*\n${resultText}`
   };
 }
