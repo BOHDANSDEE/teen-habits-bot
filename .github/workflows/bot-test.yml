@@ -24,6 +24,10 @@ jobs:
       - run: node --check src/pools.js
       - run: node --check src/direct-pools.js
       - run: node --check src/level-context-pools.js
+      - run: node --check src/problem-pools.js
+      - run: node --check src/plain-secondary-gain.js
+      - run: node --check src/life-meaning-pools.js
+      - run: node --check src/level-output-pools.js
       - run: node --check src/direct-body-copy.js
       - run: node --check src/body-state-pools.js
       - run: node --check src/after-state-lazy.js
@@ -37,6 +41,7 @@ jobs:
       - run: node --check src/feeling-guide-intros.js
       - run: node --check src/feeling-guide-scenes.js
       - run: node --check src/feeling-guide.js
+      - run: node --check src/feeling-continuation.js
       - run: node --check src/renderer.js
       - run: node --check src/generic-result.js
       - run: node --check src/navigation-keyboards.js

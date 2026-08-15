@@ -1,3 +1,7 @@
+import { getLevelSecondaryGainPool } from "./level-context-pools.js";
+
+const directPoolCache = new Map();
+
 const PREFIXES = [
   "Тобі по-своєму вигідно",
   "Коротка вигода цього сценарію для тебе —",
@@ -21,35 +25,27 @@ const PREFIXES = [
   "Цей звичний спосіб залишає тобі можливість"
 ];
 
-const PLAIN_OPENERS = [
-  "На короткий час тобі стає легше, бо можна",
-  "Прямо зараз тобі простіше, бо можна",
-  "У цей момент ти зменшуєш напругу, бо можна",
-  "Ти отримуєш швидке полегшення, бо можна",
-  "На кілька хвилин стає спокійніше, бо можна",
-  "Зараз ти уникаєш зайвої напруги, бо можна",
-  "У моменті тобі комфортніше, бо можна",
-  "Ти швидко полегшуєш собі ситуацію, бо можна",
-  "На короткий час ти прибираєш дискомфорт, бо можна",
-  "Ти відчуваєш коротке полегшення, бо можна",
-  "Зараз ситуація здається легшою, бо можна",
-  "У цю мить тобі не так напружено, бо можна",
-  "Ти тимчасово знижуєш тиск на себе, бо можна",
-  "На короткий час стає простіше, бо можна",
-  "Ти бережеш сили прямо зараз, бо можна",
-  "У моменті ти відкладаєш неприємну частину, бо можна",
-  "Тобі стає спокійніше прямо зараз, бо можна",
-  "Ти отримуєш миттєве полегшення, бо можна",
-  "На цей момент тобі легше, бо можна",
-  "Ти зменшуєш напругу тут і зараз, бо можна"
-];
-
-const PLAIN_ENDINGS = [
-  "Саме це коротке полегшення підштовхує повторити таку поведінку наступного разу.",
-  "Мозок запам’ятовує, що так стало легше, тому знову пропонує цей варіант.",
-  "Через це наступного разу знову хочеться обрати той самий легший шлях.",
-  "Так мозок пов’язує цю поведінку зі швидким полегшенням і повторює її.",
-  "Тому ця реакція легко повертається, коли знову стає некомфортно."
+const BENEFIT_OPENERS = [
+  "Ця проблема дає тобі {benefit}",
+  "Залишаючись у цій проблемі, ти отримуєш {benefit}",
+  "Так ти зберігаєш {benefit}",
+  "У цій проблемі для тебе є {benefit}",
+  "Старий спосіб тримається, бо дає тобі {benefit}",
+  "Цей вибір повторюється, бо дає тобі {benefit}",
+  "Ти повертаєшся до цієї проблеми заради {benefit}",
+  "Коротка вигода цієї проблеми — {benefit}",
+  "Для тебе ця проблема зберігає {benefit}",
+  "Саме тут ти отримуєш {benefit}",
+  "Ця поведінка залишається вигідною через {benefit}",
+  "Проблема повторюється, бо в ній є {benefit}",
+  "Ти не поспішаєш змінювати це через {benefit}",
+  "Старий вибір здається зручним через {benefit}",
+  "Триматися за цю проблему допомагає {benefit}",
+  "Ця проблема тимчасово забезпечує {benefit}",
+  "Тобі легше залишити все як є через {benefit}",
+  "Зміни відкладаються, бо старий спосіб дає {benefit}",
+  "У короткий момент ця проблема створює {benefit}",
+  "Саме {benefit} робить цю проблему вигідною зараз"
 ];
 
 function sentence(text = "") {
@@ -84,17 +80,52 @@ function secondaryGainParts(text = "") {
   return { core: plainWords(value), variant };
 }
 
+function benefitFromCore(core = "") {
+  const text = String(core).toLocaleLowerCase("uk-UA");
+  if (/знайом|передбач|звичн|не міняти середовище|не перебудов/u.test(text)) return "відчуття стабільності й передбачуваності";
+  if (/сил|ресурс|навантаж|зусилл|енерг/u.test(text)) return "можливість зберегти сили прямо зараз";
+  if (/нудьг|напруг|дискомфорт|неприєм|емоці/u.test(text)) return "швидке полегшення від неприємного відчуття";
+  if (/вільн|обов’яз|обов'яз|план|правил/u.test(text)) return "відчуття свободи від обов'язку прямо зараз";
+  if (/виріш|вибір|визначен|відповідальн/u.test(text)) return "можливість не робити складний вибір";
+  if (/оцін|результат|чернет|ідеаль/u.test(text)) return "захист від оцінки неідеального результату";
+  if (/невдач|помил|розчар/u.test(text)) return "відчуття безпеки від можливої невдачі";
+  if (/контрол|дикту|тиск/u.test(text)) return "відчуття контролю над моментом і рішенням";
+  if (/винагород|стимул|задовол|приєм/u.test(text)) return "швидке приємне відчуття без очікування";
+  if (/дедлайн|термінов|останн/u.test(text)) return "зовнішній поштовх, який не треба створювати самому";
+  if (/інш|чуж|соціал|помітн|коментар/u.test(text)) return "захист від чужої оцінки й зайвої уваги";
+  if (/самому|самостій|допомог/u.test(text)) return "відчуття самостійності й контролю";
+  if (/сон|вечір|ніч/u.test(text)) return "відчуття особистого часу й свободи";
+  return "коротке відчуття полегшення й безпеки";
+}
+
 export function secondaryGainCore(text = "") {
   return secondaryGainParts(text).core;
 }
 
-export function buildPlainSecondaryGain(text = "") {
+export function buildPlainSecondaryGain(text = "", forcedBenefit = null) {
   const { core, variant } = secondaryGainParts(text);
   if (!core) {
-    return "Тобі на короткий час стає легше, бо не треба нічого змінювати прямо зараз. Мозок запам’ятовує це полегшення, тому така реакція легко повторюється.";
+    return "Ця проблема дає тобі коротке відчуття полегшення й безпеки. Тому тобі вигідно залишити все як є прямо зараз.";
   }
 
-  const opener = PLAIN_OPENERS[variant] || PLAIN_OPENERS[0];
-  const ending = PLAIN_ENDINGS[variant % PLAIN_ENDINGS.length];
-  return `${sentence(`${opener} ${core}`)} ${ending}`;
+  const benefit = forcedBenefit || benefitFromCore(core);
+  const opener = BENEFIT_OPENERS[variant] || BENEFIT_OPENERS[0];
+  return `${sentence(opener.replaceAll("{benefit}", benefit))} ${sentence(`Тому тобі вигідно ${core}`)}`;
+}
+
+export function getDirectSecondaryGainPool(themeKey, levelKey) {
+  const cacheKey = `${themeKey}.${levelKey}`;
+  if (directPoolCache.has(cacheKey)) return directPoolCache.get(cacheKey);
+  const source = getLevelSecondaryGainPool(themeKey, levelKey);
+  const pool = source.map((text, index) => {
+    const cleanupStability = cacheKey === "lazy.l6" && index < 250
+      ? "відчуття стабільності й передбачуваності"
+      : null;
+    return buildPlainSecondaryGain(text, cleanupStability);
+  });
+  if (pool.length !== 500 || new Set(pool).size !== 500) {
+    throw new Error(`${cacheKey}: secondary gain pool must have 500 unique visible texts`);
+  }
+  directPoolCache.set(cacheKey, pool);
+  return pool;
 }
