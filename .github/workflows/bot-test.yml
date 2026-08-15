@@ -28,6 +28,7 @@ jobs:
       - run: node --check src/plain-secondary-gain.js
       - run: node --check src/life-meaning-pools.js
       - run: node --check src/level-output-pools.js
+      - run: node --check src/independent-life-pools.js
       - run: node --check src/direct-body-copy.js
       - run: node --check src/body-state-pools.js
       - run: node --check src/after-state-lazy.js
