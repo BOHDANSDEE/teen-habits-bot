@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { FUTURE_BLOCKS } from "../src/future-blocks.js";
 import { buildGenericPools } from "../src/generic-500-pools.js";
 import { buildGenericResult } from "../src/generic-result.js";
+import {
+  getIndependentLifeVariant,
+  INDEPENDENT_LIFE_POOLS
+} from "../src/independent-life-pools.js";
 import { cleanLevelName } from "../src/level-output-pools.js";
 
 const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
@@ -16,6 +20,7 @@ function sectionBetween(text, start, end) {
 }
 
 let activeLevels = 0;
+let firstPools = null;
 for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
   if (block.enabled === false) continue;
   for (const [themeKey, theme] of Object.entries(block.subthemes || {})) {
@@ -23,22 +28,9 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
       activeLevels += 1;
       const pools = buildGenericPools(level);
       const problemName = cleanLevelName(level.name || level.articleTitle);
-
-      for (const [name, pool] of Object.entries(pools)) {
-        assert.equal(pool.length, 500, `${blockKey}/${themeKey}/${levelKey}: ${name} length`);
-        assert.equal(new Set(pool).size, 500, `${blockKey}/${themeKey}/${levelKey}: ${name} unique`);
-      }
-
-      assert.ok(pools.problems.slice(0, 250).every((text) => sentenceCount(text) === 2));
-      assert.ok(pools.problems.slice(250).every((text) => sentenceCount(text) === 3));
-      assert.ok(pools.gains.every((text) => sentenceCount(text) === 2));
-      assert.ok(pools.meanings.slice(0, 250).every((text) => sentenceCount(text) === 1));
-      assert.ok(pools.meanings.slice(250).every((text) => sentenceCount(text) === 2));
-      assert.ok(pools.affirmations.slice(0, 250).every((text) => sentenceCount(text) === 2));
-      assert.ok(pools.affirmations.slice(250).every((text) => sentenceCount(text) === 3));
-      assert.ok(pools.results.every((text) => sentenceCount(text) === 2));
-      assert.ok(pools.gains.every((text) => /вигід|вигод|коротк|старий спосіб|зруч/iu.test(text)));
-      assert.ok(pools.results.every((text) => /легше|ясн|зрозуміліш|контрол/iu.test(text)));
+      if (!firstPools) firstPools = pools;
+      assert.equal(pools, firstPools, `${blockKey}/${themeKey}/${levelKey}: pools must not depend on level`);
+      assert.equal(pools, INDEPENDENT_LIFE_POOLS);
 
       const renderedSets = {
         problems: new Set(),
@@ -49,6 +41,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
       };
 
       for (let index = 0; index < 500; index += 1) {
+        const expected = getIndependentLifeVariant(index);
         const rendered = buildGenericResult(blockKey, themeKey, levelKey, index);
         assert.ok(rendered);
         assert.equal(rendered.variantIndex, index);
@@ -66,11 +59,13 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         const affirmation = sectionBetween(rendered.text, "🔑 *Афірмація*\n", "\n\n🔁 Повтори афірмацію");
         const result = sectionBetween(rendered.text, "✨ *Результат*\n", null);
 
-        assert.equal(problem, pools.problems[index]);
-        assert.equal(gain, pools.gains[index]);
-        assert.equal(meaning, pools.meanings[index]);
-        assert.equal(affirmation, pools.affirmations[index]);
-        assert.equal(result, pools.results[index]);
+        assert.equal(problem, expected.problem);
+        assert.equal(gain, expected.gain);
+        assert.equal(meaning, expected.meaning);
+        assert.equal(affirmation, expected.affirmation);
+        assert.equal(result, expected.result);
+        assert.equal(sentenceCount(result), 3);
+        assert.match(result, /Тепер тобі стало легше/iu);
         assert.ok(rendered.text.length < 4096, `${blockKey}/${themeKey}/${levelKey}/${index}: Telegram limit`);
 
         renderedSets.problems.add(problem);
@@ -88,4 +83,4 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
 }
 
 assert.ok(activeLevels > 0);
-console.log(`✅ Generic: ${activeLevels} active levels use 500 unique problem/gain/meaning/affirmation/result variants`);
+console.log(`✅ Generic: ${activeLevels} active levels share the same five independent 500 pools`);
