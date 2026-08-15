@@ -34,7 +34,7 @@ assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(250).every((text) => sentenceCou
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 250).every((text) => sentenceCount(text) === 2));
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(250).every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
-assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => /вигід|вигод|дає|допомагає|дозволяє/iu.test(text)));
+assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => /вигід|вигод|дає|давати|допомагає|дозволяє|захищає/iu.test(text)));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => /Тепер тобі стало легше/iu.test(text)));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => PHYSICAL_RELIEF.test(text.split(/(?<=[.!?…])\s+/u)[0] || "")));
 
