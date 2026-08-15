@@ -20,7 +20,7 @@ assert.ok(INDEPENDENT_LIFE_POOLS.problems.every((text) =>
 assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => sentenceCount(text) === 2));
 for (const text of INDEPENDENT_LIFE_POOLS.gains) {
   const [benefit, whyStay] = splitSentences(text).map((part) => part.trim());
-  assert.match(benefit, /\bможна\b/iu);
+  assert.match(benefit, /можна/iu);
   assert.match(whyStay, /^Тому тобі вигідно залишатися/iu);
 }
 
@@ -31,7 +31,7 @@ assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sen
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
 for (const text of INDEPENDENT_LIFE_POOLS.affirmations) {
   for (const part of splitSentences(text)) {
-    assert.match(part.trim(), /^Я\b/u, "every affirmation sentence must stay in first person");
+    assert.match(part.trim(), /^Я(?:\s|$)/u, "every affirmation sentence must stay in first person");
   }
   assert.doesNotMatch(text, /я найкращ|ніколи не буде проблем|усі проблеми зник/iu);
 }
