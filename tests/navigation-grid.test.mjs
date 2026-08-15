@@ -70,14 +70,12 @@ assert.equal(
   "hinted level must preserve its real page for back navigation"
 );
 
-assert.ok(
-  subthemesMenu.inline_keyboard.flat().some((item) => item.text === "🔄 Інша підказка"),
-  "block screen must allow rerolling its hint"
-);
-assert.ok(
-  levelsMenu.inline_keyboard.flat().some((item) => item.text === "🔄 Інша підказка"),
-  "level screen must allow rerolling its hint"
-);
+for (const keyboard of [menu, subthemesMenu, levelsMenu]) {
+  assert.ok(
+    !keyboard.inline_keyboard.flat().some((item) => item.text === "🔄 Інша підказка"),
+    "«Інша підказка» must not appear anywhere in the hint flow"
+  );
+}
 
 const resultMenu = resultKeyboard(
   "state_action",
@@ -93,4 +91,4 @@ assert.ok(!resultButtons.some((item) => item.text === "➡️ Продовжит
 assert.ok(!resultButtons.some((item) => item.text === "🎲 Інший варіант"));
 assert.ok(!resultButtons.some((item) => String(item.callback_data || "").startsWith("reroll:")));
 
-console.log("✅ Підказка показує напрям у кнопці на шляху блок → підблок → рівень");
+console.log("✅ Підказка показує напрям у кнопці без «Іншої підказки»");
