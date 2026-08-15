@@ -6,7 +6,7 @@ import { buildGenericResult } from "../src/generic-result.js";
 import { getIndependentLifeVariant } from "../src/independent-life-pools.js";
 
 const FORBIDDEN_OLD = /🌿🧠 \*Стан\*|💭 \*Ти так це відчуваєш\?\*|✨ \*Тепер ти відчуваєш\*|🔑 \*Рішення\*|Тіло:\s*Інтуїтивне/iu;
-const PHYSICAL_RELIEF = /полегшення|напруг|легш|вільніш|розслаб|дихати|тиск|м['’]якш/iu;
+const PHYSICAL_RELIEF = /полегш|напруг|напруж|легш|легк|вільніш|розслаб|дихати|тиск|м['’]якш/iu;
 const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
 
 const primaryEntries = Object.entries(MAIN_BLOCK.subthemes).flatMap(([themeKey, theme]) =>
