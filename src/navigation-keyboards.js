@@ -124,13 +124,7 @@ export function resultKeyboard(blockKey, themeKey, levelKey, page = 0, next = nu
 
   return {
     inline_keyboard: [
-      [{ text: "➡️ Продовжити", callback_data: solutionCallback }],
-      [
-        {
-          text: "🎲 Інший варіант",
-          callback_data: `reroll:${blockKey}:${themeKey}:${levelKey}:${page}`
-        }
-      ],
+      [{ text: "💡 Хочу рішення", callback_data: solutionCallback }],
       [{ text: "⬅️ До ситуацій", callback_data: `levels:${blockKey}:${themeKey}:${page}` }],
       [{ text: "⬅️ До блоку", callback_data: `block:${blockKey}` }],
       [{ text: "🏠 Головне меню", callback_data: "home" }]
