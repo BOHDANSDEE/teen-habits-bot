@@ -39,7 +39,7 @@ assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => /Тепер тобі с
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => PHYSICAL_RELIEF.test(text.split(/(?<=[.!?…])\s+/u)[0] || "")));
 
 const allLifeText = `${INDEPENDENT_LIFE_POOLS.problems.join(" ")} ${INDEPENDENT_LIFE_POOLS.meanings.join(" ")}`;
-for (const sphere of [/навчан/iu, /друж/iu, /сім/iu, /грош/iu, /соцмереж/iu, /сон/iu, /побут|домаш/iu, /стосунк/iu, /майбут/iu, /відпоч/iu]) {
+for (const sphere of [/навчан/iu, /друж/iu, /сім/iu, /грош/iu, /соцмереж/iu, /сон|сні/iu, /побут|домаш/iu, /стосунк/iu, /майбут/iu, /відпоч/iu]) {
   assert.match(allLifeText, sphere, `life sphere missing: ${sphere}`);
 }
 
