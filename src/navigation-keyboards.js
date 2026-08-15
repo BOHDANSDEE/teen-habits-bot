@@ -84,7 +84,6 @@ export function mainMenuKeyboard(recommendation = null) {
     ])
   );
 
-  rows.push([{ text: "🔄 Інша підказка", callback_data: "home" }]);
   return { inline_keyboard: rows };
 }
 
@@ -104,7 +103,6 @@ export function subthemesKeyboard(blockKey) {
         callback_data: `theme:${blockKey}:${hintThemeKey}:0`
       }
     ]);
-    rows.push([{ text: "🔄 Інша підказка", callback_data: `block:${blockKey}` }]);
   }
 
   rows.push(
@@ -136,12 +134,6 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
           decorateLevelName(themeKey, hintLevelKey, hintLevel.name || hintLevel.articleTitle)
         ),
         callback_data: `level:${blockKey}:${themeKey}:${hintLevelKey}:${hintPage}`
-      }
-    ]);
-    rows.push([
-      {
-        text: "🔄 Інша підказка",
-        callback_data: `levels:${blockKey}:${themeKey}:${meta.page}`
       }
     ]);
   }
