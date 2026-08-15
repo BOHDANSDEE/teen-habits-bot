@@ -18,6 +18,28 @@ function cleanMenuLabel(text) {
     .trim();
 }
 
+function cleanHintDestination(text) {
+  return cleanMenuLabel(text)
+    .replace(/^[^\p{L}\p{N}]+/u, "")
+    .trim();
+}
+
+function hintButtonLabel(text) {
+  const destination = Array.from(cleanHintDestination(text));
+  const maxDestinationLength = 46;
+  const shortDestination =
+    destination.length > maxDestinationLength
+      ? `${destination.slice(0, maxDestinationLength - 1).join("")}…`
+      : destination.join("");
+
+  return `🎲 Підказка (${shortDestination || "наступний крок"})`;
+}
+
+function pickRandomEntry(entries = []) {
+  if (!entries.length) return null;
+  return entries[Math.floor(Math.random() * entries.length)] || null;
+}
+
 export function getLevelsPageMeta(blockKey, themeKey, page = 0) {
   const theme = getBlockSubtheme(blockKey, themeKey);
   const entries = Object.entries(theme?.levels || {});
@@ -44,11 +66,11 @@ export function getLevelPage(blockKey, themeKey, levelKey) {
 export function mainMenuKeyboard(recommendation = null) {
   const rows = [];
 
-  if (recommendation) {
+  if (recommendation?.blockKey && recommendation?.block) {
     rows.push([
       {
-        text: "🎲 Підказка",
-        callback_data: `recommend:${recommendation.blockKey}:${recommendation.themeKey}:${recommendation.levelKey}`
+        text: hintButtonLabel(recommendation.block.name),
+        callback_data: `block:${recommendation.blockKey}`
       }
     ]);
   }
@@ -68,12 +90,31 @@ export function mainMenuKeyboard(recommendation = null) {
 
 export function subthemesKeyboard(blockKey) {
   const block = getBlock(blockKey);
-  const rows = Object.entries(block?.subthemes || {}).map(([key, theme]) => [
-    {
-      text: cleanMenuLabel(theme.name),
-      callback_data: `theme:${blockKey}:${key}:0`
-    }
-  ]);
+  const themeEntries = Object.entries(block?.subthemes || {});
+  const hintEntry = pickRandomEntry(
+    themeEntries.filter(([, theme]) => Object.keys(theme?.levels || {}).length > 0)
+  );
+  const rows = [];
+
+  if (hintEntry) {
+    const [hintThemeKey, hintTheme] = hintEntry;
+    rows.push([
+      {
+        text: hintButtonLabel(hintTheme.name),
+        callback_data: `theme:${blockKey}:${hintThemeKey}:0`
+      }
+    ]);
+    rows.push([{ text: "🔄 Інша підказка", callback_data: `block:${blockKey}` }]);
+  }
+
+  rows.push(
+    ...themeEntries.map(([key, theme]) => [
+      {
+        text: cleanMenuLabel(theme.name),
+        callback_data: `theme:${blockKey}:${key}:0`
+      }
+    ])
+  );
 
   rows.push([{ text: "🏠 Головне меню", callback_data: "home" }]);
   return { inline_keyboard: rows };
@@ -81,8 +122,29 @@ export function subthemesKeyboard(blockKey) {
 
 export function levelsKeyboard(blockKey, themeKey, page = 0) {
   const meta = getLevelsPageMeta(blockKey, themeKey, page);
+  const theme = getBlockSubtheme(blockKey, themeKey);
   const pageEntries = meta.entries.slice(meta.start, meta.end);
+  const hintEntry = pickRandomEntry(meta.entries);
   const rows = [];
+
+  if (hintEntry) {
+    const [hintLevelKey, hintLevel] = hintEntry;
+    const hintPage = getLevelPage(blockKey, themeKey, hintLevelKey);
+    rows.push([
+      {
+        text: hintButtonLabel(
+          decorateLevelName(themeKey, hintLevelKey, hintLevel.name || hintLevel.articleTitle)
+        ),
+        callback_data: `level:${blockKey}:${themeKey}:${hintLevelKey}:${hintPage}`
+      }
+    ]);
+    rows.push([
+      {
+        text: "🔄 Інша підказка",
+        callback_data: `levels:${blockKey}:${themeKey}:${meta.page}`
+      }
+    ]);
+  }
 
   for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
     rows.push(
