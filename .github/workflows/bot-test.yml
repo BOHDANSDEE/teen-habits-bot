@@ -49,4 +49,5 @@ jobs:
       - run: node --check tests/concise-flow.test.mjs
       - run: node --check tests/generic-500-flow.test.mjs
       - run: node --check tests/direct-body-copy.test.mjs
+      - run: node --check tests/broad-life-pools.test.mjs
       - run: npm test
