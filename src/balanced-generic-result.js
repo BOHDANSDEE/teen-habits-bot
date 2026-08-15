@@ -1,8 +1,7 @@
 import { getBlock, getBlockSubtheme } from "./navigation.js";
-import { buildGenericPools } from "./generic-500-pools.js";
+import { getIndependentLifeVariant, POOL_SIZE } from "./independent-life-pools.js";
 import { cleanLevelName } from "./level-output-pools.js";
 
-const POOL_SIZE = 500;
 const readCount = () => 3 + Math.floor(Math.random() * 7);
 
 function normalizeVariant(requestedVariant) {
@@ -17,13 +16,8 @@ export function buildGenericResult(blockKey, themeKey, levelKey, requestedVarian
   const level = theme?.levels?.[levelKey];
   if (!block || !theme || !level) return null;
 
-  const pools = buildGenericPools(level);
   const index = normalizeVariant(requestedVariant);
-  const problem = pools.problems[index] || pools.problems[0] || "";
-  const gain = pools.gains[index] || pools.gains[0] || "";
-  const meaning = pools.meanings[index] || pools.meanings[0] || "";
-  const affirmation = pools.affirmations[index] || pools.affirmations[0] || "";
-  const resultText = pools.results[index] || pools.results[0] || "";
+  const variant = getIndependentLifeVariant(Number.isInteger(requestedVariant) ? index : null);
   const count = readCount();
   const problemName = cleanLevelName(level.name || level.articleTitle);
 
@@ -32,10 +26,17 @@ export function buildGenericResult(blockKey, themeKey, levelKey, requestedVarian
     themeKey,
     levelKey,
     variantIndex: index,
+    independentIndices: {
+      problem: variant.problemIndex,
+      gain: variant.gainIndex,
+      meaning: variant.meaningIndex,
+      affirmation: variant.affirmationIndex,
+      result: variant.resultIndex
+    },
     articleSlug: level.articleSlug,
     articleTitle: level.articleTitle,
     readCount: count,
-    resultText,
-    text: `📖 *Інструкція:* Прочитай текст повільно від початку до кінця.\n\n🔎 *Проблема: ${problemName}*\n\n🔹 *Проблема*\n${problem}\n\n🪞 *Вторинна вигода*\n${gain}\n\n🌟 *Значення в житті*\n${meaning}\n\n🔑 *Афірмація*\n${affirmation}\n\n🔁 Повтори афірмацію ${count} разів.\n\n✨ *Результат*\n${resultText}`
+    resultText: variant.result,
+    text: `📖 *Інструкція:* Прочитай текст повільно від початку до кінця.\n\n🔎 *Проблема: ${problemName}*\n\n🔹 *Проблема*\n${variant.problem}\n\n🪞 *Вторинна вигода*\n${variant.gain}\n\n🌟 *Значення в житті*\n${variant.meaning}\n\n🔑 *Афірмація*\n${variant.affirmation}\n\n🔁 Повтори афірмацію ${count} разів.\n\n✨ *Результат*\n${variant.result}`
   };
 }
