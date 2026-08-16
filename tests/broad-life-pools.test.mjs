@@ -17,7 +17,7 @@ const sentenceCount = (text) => splitSentences(text).length;
 const longest = (items) => items.reduce((best, item) => item.length > best.length ? item : best, "");
 const ALT_ACTION = /(інший спосіб дії|як діяти інакше)/iu;
 const NEXT_STEP = /^Наступний крок ясніший:/iu;
-const BODY = /плеч|шиї|груд|живот|щелеп|спин|рук|горл|голов|тіл/iu;
+const BODY = /плеч|ши[яї]|груд|жив[іо]т|щелеп|спин|рук|горл|голов|тіл/iu;
 
 assert.equal(POOL_SIZE, 4000);
 for (const [name, pool] of Object.entries(INDEPENDENT_LIFE_POOLS)) {
