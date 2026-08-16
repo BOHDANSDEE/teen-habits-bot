@@ -13,6 +13,8 @@ const gains = Object.freeze(BASE_POOLS.gains.map((text) =>
     .replace(" — фактично ", " — бо так ")
     .replace(" — саме так ", " — тоді ")
     .replace(" — тимчасово ", " — на мить ")
+    .replace("не треба лишатися з собою", "не треба бути наодинці")
+    .replace("ти весь час зайнятий чужими справами", "ти зайнятий чужими справами")
 ));
 
 const meanings = Object.freeze(BASE_POOLS.meanings.map((text) =>
