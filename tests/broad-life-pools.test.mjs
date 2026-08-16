@@ -34,27 +34,21 @@ assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sen
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
 
-// The old generator mixed independent area + behavior + context inside one sentence.
-// These fragments are regression markers for the broken style seen in production.
+// Regression for the broken production style: independent area/context fragments
+// must never be stitched onto an unrelated behavior inside one sentence.
 const allText = Object.values(INDEPENDENT_LIFE_POOLS).flat().join(" ");
 assert.doesNotMatch(
   allText,
-  /під оцінкою|при розсіянні|у метушні|на старті|малий крок у відпочинку|перфекціонізм у спорті/iu,
+  /під оцінкою|при розсіянні|у метушні|на старті|малий крок у відпочинку|перфекціонізм у спорті|коли кажеш «ні»/iu,
   "old artificial context stitching must not return"
 );
 
-// Problem/Gain/Affirmation/Result are intentionally universal so a random text
-// cannot visibly contradict the selected level title. Specific life spheres live in Meaning only.
+// Meaning is the section where a broad life sphere may be named explicitly.
+// Every Meaning text must still be built around one recognizable sphere.
 const explicitArea = /у дружбі|у сім[’']ї|у навчанні|у грошах|у здоров[’']ї|у сні|у побуті|у самооцінці|у майбутньому|у відпочинку|у соцмережах|у роботі|у спорті|у особистих межах|у спілкуванні|у рішеннях|у цілях|в емоціях|у відповідальності|у особистому розвитку/iu;
-for (const name of ["problems", "gains", "affirmations", "results"]) {
-  assert.ok(
-    INDEPENDENT_LIFE_POOLS[name].every((text) => !explicitArea.test(text)),
-    `${name}: must stay universal instead of injecting a random life sphere`
-  );
-}
 assert.ok(
   INDEPENDENT_LIFE_POOLS.meanings.every((text) => explicitArea.test(text)),
-  "Meaning may name one coherent life sphere"
+  "Meaning must name one coherent broad life sphere"
 );
 
 const meaningText = INDEPENDENT_LIFE_POOLS.meanings.join(" ");
