@@ -3,7 +3,11 @@ import { MAIN_BLOCK } from "../src/content.js";
 import { FUTURE_BLOCKS } from "../src/future-blocks.js";
 import {
   getIndependentLifeVariant,
+  getLifeThemePoolIndices,
   INDEPENDENT_LIFE_POOLS,
+  LIFE_RANDOM_THEMES,
+  LIFE_THEME_COUNT,
+  LIFE_THEME_POOL_SIZE,
   POOL_SIZE
 } from "../src/independent-life-pools.js";
 import {
@@ -34,8 +38,6 @@ assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sen
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
 
-// Regression for the broken production style: independent area/context fragments
-// must never be stitched onto an unrelated behavior inside one sentence.
 const allText = Object.values(INDEPENDENT_LIFE_POOLS).flat().join(" ");
 assert.doesNotMatch(
   allText,
@@ -43,8 +45,6 @@ assert.doesNotMatch(
   "old artificial context stitching must not return"
 );
 
-// Meaning is the section where a broad life sphere may be named explicitly.
-// Every Meaning text must still be built around one recognizable sphere.
 const explicitArea = /у дружбі|у сім[’']ї|у навчанні|у грошах|у здоров[’']ї|у сні|у побуті|у самооцінці|у майбутньому|у відпочинку|у соцмережах|у роботі|у спорті|у особистих межах|у спілкуванні|у рішеннях|у цілях|в емоціях|у відповідальності|у особистому розвитку/iu;
 assert.ok(
   INDEPENDENT_LIFE_POOLS.meanings.every((text) => explicitArea.test(text)),
@@ -101,26 +101,49 @@ for (const sample of deterministicSamples) {
     sample.affirmationIndex,
     sample.resultIndex
   ]).size, 5, "the five card sections keep separate deterministic indices");
+
+  for (const [section, index] of [
+    ["problems", sample.problemIndex],
+    ["gains", sample.gainIndex],
+    ["meanings", sample.meaningIndex],
+    ["affirmations", sample.affirmationIndex],
+    ["results", sample.resultIndex]
+  ]) {
+    assert.ok(
+      getLifeThemePoolIndices(sample.themeKey, section).includes(index),
+      `${section} must stay inside ${sample.themeKey}`
+    );
+  }
 }
 
 const originalRandom = Math.random;
 let randomCalls = 0;
-const randomSequence = [0.01, 0.21, 0.41, 0.61, 0.81];
+const randomSequence = [0.31, 0.01, 0.21, 0.41, 0.61, 0.81];
 try {
   Math.random = () => randomSequence[randomCalls++];
   const randomVariant = getIndependentLifeVariant();
-  assert.equal(randomCalls, 5, "production random mode must draw independently five times");
-  assert.deepEqual(
-    [
-      randomVariant.problemIndex,
-      randomVariant.gainIndex,
-      randomVariant.meaningIndex,
-      randomVariant.affirmationIndex,
-      randomVariant.resultIndex
-    ],
-    randomSequence.map((value) => Math.floor(value * POOL_SIZE)),
-    "problem/gain/meaning/affirmation/result must receive independent random indices"
-  );
+  assert.equal(randomCalls, 6, "production random mode chooses one theme and five independent section slots");
+
+  const expectedTheme = LIFE_RANDOM_THEMES[Math.floor(randomSequence[0] * LIFE_THEME_COUNT)];
+  assert.equal(randomVariant.themeKey, expectedTheme.key);
+
+  const sectionPairs = [
+    ["problems", "problemIndex"],
+    ["gains", "gainIndex"],
+    ["meanings", "meaningIndex"],
+    ["affirmations", "affirmationIndex"],
+    ["results", "resultIndex"]
+  ];
+
+  for (let i = 0; i < sectionPairs.length; i += 1) {
+    const [section, field] = sectionPairs[i];
+    const indices = getLifeThemePoolIndices(expectedTheme.key, section);
+    assert.equal(
+      randomVariant[field],
+      indices[Math.floor(randomSequence[i + 1] * LIFE_THEME_POOL_SIZE)],
+      `${section} must use its own random slot inside the selected theme`
+    );
+  }
 } finally {
   Math.random = originalRandom;
 }
@@ -153,4 +176,4 @@ const worstCard = (problemName, nextBlock = "") =>
 assert.ok(worstCard(longestFutureName).length < 4096, "generic theoretical worst-case card exceeds Telegram limit");
 assert.ok(worstCard(longestPrimaryName, longestNextBlock).length < 4096, "primary theoretical worst-case card exceeds Telegram limit");
 
-console.log(`✅ Shared pools: 5 × ${POOL_SIZE}, coherent per-section scenarios, independent random mixing, Telegram safe`);
+console.log(`✅ Shared pools: 20 themes × 200 texts per section; five random sections stay in one theme; Telegram safe`);
