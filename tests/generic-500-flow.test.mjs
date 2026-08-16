@@ -65,7 +65,7 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         assert.equal(affirmation, expected.affirmation);
         assert.equal(result, expected.result);
         assert.equal(sentenceCount(result), 3);
-        assert.match(result, /Тепер тобі стало легше/iu);
+        assert.match(result, /Тепер легше побачити інший спосіб дії/iu);
         assert.ok(rendered.text.length < 4096, `${blockKey}/${themeKey}/${levelKey}/${index}: Telegram limit`);
       }
     }
