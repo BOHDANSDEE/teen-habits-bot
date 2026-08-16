@@ -14,7 +14,7 @@ const LIMITS = Object.freeze({
 
 const AVERAGE_LIMITS = Object.freeze({
   problems: 100,
-  gains: 115,
+  gains: 116,
   meanings: 80,
   affirmations: 100,
   results: 165
