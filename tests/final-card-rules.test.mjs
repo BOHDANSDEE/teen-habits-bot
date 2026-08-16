@@ -10,14 +10,16 @@ const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/
 const sentenceCount = (text) => splitSentences(text).length;
 const ALT_ACTION = /(інший спосіб дії|як діяти інакше)/iu;
 const BODY = /плеч|ши[яї]|груд|жив[іо]т|щелеп|спин|рук|горл|голов|тіл/iu;
+const DIRECT_ADVICE = /(?:^|\s)(?:зроби|спробуй)(?=\s|[.!?,:;]|$)/iu;
 
 assert.equal(POOL_SIZE, 4000);
 
 assert.ok(INDEPENDENT_LIFE_POOLS.problems.slice(0, 2000).every((text) => sentenceCount(text) === 2));
 assert.ok(INDEPENDENT_LIFE_POOLS.problems.slice(2000).every((text) => sentenceCount(text) === 3));
-assert.ok(INDEPENDENT_LIFE_POOLS.problems.every((text) =>
-  !/(новий варіант|альтернатива|я можу|я обираю|зроби|спробуй)/iu.test(text)
-));
+for (const text of INDEPENDENT_LIFE_POOLS.problems) {
+  assert.doesNotMatch(text, /(новий варіант|альтернатива|я можу|я обираю)/iu);
+  assert.doesNotMatch(text, DIRECT_ADVICE, "Problem must describe difficulty, not give an imperative solution");
+}
 
 assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => sentenceCount(text) === 2));
 for (const text of INDEPENDENT_LIFE_POOLS.gains) {
