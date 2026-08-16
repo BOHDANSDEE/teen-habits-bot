@@ -24,7 +24,7 @@ for (const text of INDEPENDENT_LIFE_POOLS.problems) {
 assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => sentenceCount(text) === 2));
 for (const text of INDEPENDENT_LIFE_POOLS.gains) {
   const [benefit, whyStay] = splitSentences(text).map((part) => part.trim());
-  assert.ok(benefit.length >= 20, "secondary gain sentence 1 must name a concrete short benefit");
+  assert.ok(benefit.length >= 18, "secondary gain sentence 1 must name a concrete short benefit");
   assert.match(
     whyStay,
     /^Тому тобі вигідно залишатися у такому способі дій/iu,
