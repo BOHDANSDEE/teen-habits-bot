@@ -10,7 +10,7 @@ import { cleanLevelName } from "../src/level-output-pools.js";
 
 const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
 const JARGON = /патерн|сценарій|механізм|когнітив|соматич|інтуїтивне тіло/iu;
-const PHYSICAL_RELIEF = /полегш|напруг|напруж|легш|легк|вільніш|розслаб|дихати|тиск|м['’]якш|спок/iu;
+const PHYSICAL_RELIEF = /полегш|напруг|напруж|легш|легк|вільніш|розслаб|дихати|тиск|м['’]як|спок|стиск|тремт/iu;
 const SAMPLE_INDICES = [0, 1, 37, 1999, 2000, 3999];
 
 function sectionBetween(text, start, end) {
