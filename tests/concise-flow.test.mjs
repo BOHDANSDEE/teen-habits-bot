@@ -49,10 +49,11 @@ for (const text of INDEPENDENT_LIFE_POOLS.results) {
 }
 
 const indexZero = getIndependentLifeVariant(0);
+assert.equal(indexZero.themeKey, "friends");
 assert.deepEqual(
   [indexZero.problemIndex, indexZero.gainIndex, indexZero.meaningIndex, indexZero.affirmationIndex, indexZero.resultIndex],
-  [0, 59, 113, 197, 271],
-  "blocks use separate deterministic indices in test mode"
+  [0, 721, 1480, 2201, 2960],
+  "blocks use separate deterministic indices inside one selected theme"
 );
 
 for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
@@ -122,4 +123,4 @@ assert.ok(continuation.text.includes("🔎 *Проблема:"));
 assert.ok(continuation.text.includes("✨ *Результат*"));
 assert.ok(continuation.text.length < 4096);
 
-console.log(`✅ Primary: five shared ${POOL_SIZE} pools stay independent and semantically valid`);
+console.log(`✅ Primary: five shared ${POOL_SIZE} pools stay random inside one coherent life theme`);
