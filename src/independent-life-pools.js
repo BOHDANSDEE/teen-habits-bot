@@ -1,1 +1,1 @@
-export * from "./independent-life-pools-v2.js";
+export * from "./independent-life-pools-v3.js";
