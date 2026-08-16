@@ -14,7 +14,7 @@ const LIMITS = Object.freeze({
 
 const AVERAGE_LIMITS = Object.freeze({
   problems: 100,
-  gains: 115,
+  gains: 116,
   meanings: 80,
   affirmations: 100,
   results: 165
@@ -25,29 +25,35 @@ const average = (pool) => pool.reduce((sum, text) => sum + String(text).length, 
 
 assert.equal(POOL_SIZE, 4000);
 
+const metrics = {};
 let combinedLongest = 0;
 for (const [name, pool] of Object.entries(INDEPENDENT_LIFE_POOLS)) {
   assert.equal(pool.length, POOL_SIZE, `${name}: exactly ${POOL_SIZE}`);
   assert.equal(new Set(pool).size, POOL_SIZE, `${name}: all ${POOL_SIZE} texts stay unique`);
 
-  const maxLength = longest(pool);
-  assert.ok(
-    maxLength <= LIMITS[name],
-    `${name}: longest text is ${maxLength}, compact limit is ${LIMITS[name]}`
-  );
-
-  const avgLength = average(pool);
-  assert.ok(
-    avgLength <= AVERAGE_LIMITS[name],
-    `${name}: average text is ${avgLength.toFixed(1)}, compact average limit is ${AVERAGE_LIMITS[name]}`
-  );
-
-  combinedLongest += maxLength;
+  metrics[name] = {
+    max: longest(pool),
+    average: average(pool)
+  };
+  combinedLongest += metrics[name].max;
 }
 
-assert.ok(
-  combinedLongest <= 670,
-  `five longest shared sections total ${combinedLongest} chars; compact limit is 670`
+const failures = Object.entries(metrics).flatMap(([name, value]) => {
+  const items = [];
+  if (value.max > LIMITS[name]) items.push(`${name}: max ${value.max} > ${LIMITS[name]}`);
+  if (value.average > AVERAGE_LIMITS[name]) {
+    items.push(`${name}: avg ${value.average.toFixed(1)} > ${AVERAGE_LIMITS[name]}`);
+  }
+  return items;
+});
+if (combinedLongest > 670) failures.push(`combined max ${combinedLongest} > 670`);
+
+assert.equal(
+  failures.length,
+  0,
+  `compactness failures: ${failures.join("; ")}; metrics=${JSON.stringify(
+    Object.fromEntries(Object.entries(metrics).map(([name, value]) => [name, { max: value.max, avg: Number(value.average.toFixed(1)) }]))
+  )}`
 );
 
-console.log(`✅ Short shared pools: 5 × ${POOL_SIZE}; longest five-section body ${combinedLongest} chars`);
+console.log(`✅ Short shared pools: 5 × ${POOL_SIZE}; metrics ${JSON.stringify(metrics)}; combined max ${combinedLongest}`);

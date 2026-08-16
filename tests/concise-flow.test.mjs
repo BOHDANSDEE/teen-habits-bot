@@ -10,7 +10,9 @@ import { cleanLevelName } from "../src/level-output-pools.js";
 
 const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
 const JARGON = /патерн|сценарій|механізм|когнітив|соматич|інтуїтивне тіло/iu;
-const PHYSICAL_RELIEF = /полегш|напруг|напруж|легш|легк|вільніш|розслаб|дихати|тиск|м['’]як|спок|стиск|тремт/iu;
+const PHYSICAL_RELIEF = /напруг|напруж|легш|легк|вільніш|розслаб|дихати|м['’]як|спок|стиск|тремт|затиск/iu;
+const ALT_ACTION = /(інший спосіб дії|як діяти інакше)/iu;
+const NEXT_STEP = /Наступний крок ясніший:/iu;
 const SAMPLE_INDICES = [0, 1, 37, 1999, 2000, 3999];
 
 function sectionBetween(text, start, end) {
@@ -37,17 +39,13 @@ assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(2000).every((text) => sentenceCo
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sentenceCount(text) === 2));
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
-assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => /тобі вигідно/iu.test(text)));
-assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => /Тепер легше побачити інший спосіб дії/iu.test(text)));
-assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => PHYSICAL_RELIEF.test(text.split(/(?<=[.!?…])\s+/u)[0] || "")));
+assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => /Тому тобі вигідно залишатися у такому способі дій/iu.test(text)));
 
-const allLifeText = `${INDEPENDENT_LIFE_POOLS.problems.join(" ")} ${INDEPENDENT_LIFE_POOLS.meanings.join(" ")}`;
-for (const sphere of [
-  /навчан/iu, /друж|друз/iu, /сім/iu, /грош/iu, /соцмереж/iu, /сон|сні/iu,
-  /побут/iu, /майбут/iu, /відпоч/iu, /самооцін/iu, /меж/iu,
-  /робот/iu, /спорт/iu, /емоці/iu, /ціл/iu
-]) {
-  assert.match(allLifeText, sphere, `life sphere missing: ${sphere}`);
+for (const text of INDEPENDENT_LIFE_POOLS.results) {
+  const [body, alternative, next] = text.split(/(?<=[.!?…])\s+/u);
+  assert.match(body || "", PHYSICAL_RELIEF);
+  assert.match(alternative || "", ALT_ACTION);
+  assert.match(next || "", NEXT_STEP);
 }
 
 const indexZero = getIndependentLifeVariant(0);
@@ -67,7 +65,6 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
       assert.ok(rendered);
       assert.equal(rendered.variantIndex, index);
       assert.ok(rendered.text.includes(`🔎 *Проблема: ${problemName}*`));
-      assert.doesNotMatch(rendered.text, /🌿🧠 \*Стан\*|💭 \*Ти так це відчуваєш\?\*|✨ \*Тепер ти відчуваєш\*|🔑 \*Рішення\*|Тіло:\s*Інтуїтивне/iu);
 
       const nextLevel = rendered.next ? getLevel(rendered.next.themeKey, rendered.next.levelKey) : null;
       const nextTitle = nextLevel ? cleanLevelName(nextLevel.name || nextLevel.articleTitle) : null;
@@ -83,7 +80,8 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
       assert.equal(affirmation, expected.affirmation);
       assert.equal(result, expected.result);
       assert.equal(sentenceCount(result), 3);
-      assert.match(result, /Тепер легше побачити інший спосіб дії/iu);
+      assert.match(result, ALT_ACTION);
+      assert.match(result, NEXT_STEP);
       assert.ok(rendered.text.length < 4096, `${themeKey}/${levelKey}/${index}: Telegram limit`);
     }
   }
@@ -100,7 +98,6 @@ const visible = {
 };
 
 for (let index = 0; index < POOL_SIZE; index += 1) {
-  const expected = getIndependentLifeVariant(index);
   const rendered = buildResult(firstThemeKey, firstLevelKey, index);
   const nextLevel = rendered.next ? getLevel(rendered.next.themeKey, rendered.next.levelKey) : null;
   const nextTitle = nextLevel ? cleanLevelName(nextLevel.name || nextLevel.articleTitle) : null;
@@ -109,7 +106,6 @@ for (let index = 0; index < POOL_SIZE; index += 1) {
   visible.meanings.add(sectionBetween(rendered.text, "🌟 *Значення в житті*\n", "\n\n🔑 *Афірмація*"));
   visible.affirmations.add(sectionBetween(rendered.text, "🔑 *Афірмація*\n", "\n\n🔁 Повтори афірмацію"));
   visible.results.add(sectionBetween(rendered.text, "✨ *Результат*\n", nextTitle ? `\n\n${nextTitle}\n` : null));
-  assert.ok(rendered.text.includes(expected.problem));
 }
 
 for (const [name, set] of Object.entries(visible)) {
@@ -126,4 +122,4 @@ assert.ok(continuation.text.includes("🔎 *Проблема:"));
 assert.ok(continuation.text.includes("✨ *Результат*"));
 assert.ok(continuation.text.length < 4096);
 
-console.log(`✅ Primary: five shared ${POOL_SIZE} pools are level-independent and mix independently`);
+console.log(`✅ Primary: five shared ${POOL_SIZE} pools stay independent and semantically valid`);

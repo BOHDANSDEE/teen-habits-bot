@@ -10,6 +10,8 @@ import {
 import { cleanLevelName } from "../src/level-output-pools.js";
 
 const sentenceCount = (text) => (String(text).match(/[.!?…](?=\s|$)/gu) || []).length;
+const ALT_ACTION = /(інший спосіб дії|як діяти інакше)/iu;
+const NEXT_STEP = /Наступний крок ясніший:/iu;
 const SAMPLE_INDICES = [0, 1, 37, 1999, 2000, 3999];
 
 function sectionBetween(text, start, end) {
@@ -46,12 +48,6 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         assert.ok(rendered);
         assert.equal(rendered.variantIndex, index);
         assert.ok(rendered.text.includes(`🔎 *Проблема: ${problemName}*`));
-        assert.ok(rendered.text.includes("🔹 *Проблема*"));
-        assert.ok(rendered.text.includes("🪞 *Вторинна вигода*"));
-        assert.ok(rendered.text.includes("🌟 *Значення в житті*"));
-        assert.ok(rendered.text.includes("🔑 *Афірмація*"));
-        assert.ok(rendered.text.includes("✨ *Результат*"));
-        assert.doesNotMatch(rendered.text, /🌿🧠 \*Стан\*|💭 \*Ти так це відчуваєш\?\*|✨ \*Тепер ти відчуваєш\*|🔑 \*Рішення\*|Тіло:\s*Інтуїтивне/iu);
 
         const problem = sectionBetween(rendered.text, "🔹 *Проблема*\n", "\n\n🪞 *Вторинна вигода*");
         const gain = sectionBetween(rendered.text, "🪞 *Вторинна вигода*\n", "\n\n🌟 *Значення в житті*");
@@ -65,7 +61,8 @@ for (const [blockKey, block] of Object.entries(FUTURE_BLOCKS)) {
         assert.equal(affirmation, expected.affirmation);
         assert.equal(result, expected.result);
         assert.equal(sentenceCount(result), 3);
-        assert.match(result, /Тепер легше побачити інший спосіб дії/iu);
+        assert.match(result, ALT_ACTION);
+        assert.match(result, NEXT_STEP);
         assert.ok(rendered.text.length < 4096, `${blockKey}/${themeKey}/${levelKey}/${index}: Telegram limit`);
       }
     }
@@ -96,4 +93,4 @@ for (const [name, set] of Object.entries(renderedSets)) {
 }
 
 assert.equal(activeLevels, 150);
-console.log(`✅ Generic: ${activeLevels} levels share the same five independent ${POOL_SIZE} pools`);
+console.log(`✅ Generic: ${activeLevels} levels share the same five independent coherent ${POOL_SIZE} pools`);

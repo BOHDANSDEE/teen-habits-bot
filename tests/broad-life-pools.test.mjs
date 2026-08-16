@@ -15,6 +15,9 @@ import {
 const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/gu) || [];
 const sentenceCount = (text) => splitSentences(text).length;
 const longest = (items) => items.reduce((best, item) => item.length > best.length ? item : best, "");
+const ALT_ACTION = /(інший спосіб дії|як діяти інакше)/iu;
+const NEXT_STEP = /^Наступний крок ясніший:/iu;
+const BODY = /плеч|ши[яї]|груд|жив[іо]т|щелеп|спин|рук|горл|голов|тіл/iu;
 
 assert.equal(POOL_SIZE, 4000);
 for (const [name, pool] of Object.entries(INDEPENDENT_LIFE_POOLS)) {
@@ -31,20 +34,26 @@ assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sen
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
 
-// Кожен видимий текст складається з кількох незалежних змістових осей:
-// сфера (крок +1), поведінка (+20) і широкий контекст (+400).
-// Це дає 4000 змістових комбінацій без видимих технічних індексів.
-for (const [name, pool] of Object.entries(INDEPENDENT_LIFE_POOLS)) {
-  for (const base of [0, 421, 842, 1263]) {
-    assert.notEqual(pool[base], pool[base + 1], `${name}: changing life sphere must change visible text`);
-    assert.notEqual(pool[base], pool[base + 20], `${name}: changing behavior must change visible text`);
-    assert.notEqual(pool[base], pool[base + 400], `${name}: changing context must change visible text`);
-  }
-}
+// Regression for the broken production style: independent area/context fragments
+// must never be stitched onto an unrelated behavior inside one sentence.
+const allText = Object.values(INDEPENDENT_LIFE_POOLS).flat().join(" ");
+assert.doesNotMatch(
+  allText,
+  /під оцінкою|при розсіянні|у метушні|на старті|малий крок у відпочинку|перфекціонізм у спорті|коли кажеш «ні»/iu,
+  "old artificial context stitching must not return"
+);
 
-const broadText = Object.values(INDEPENDENT_LIFE_POOLS).flat().join(" ");
+// Meaning is the section where a broad life sphere may be named explicitly.
+// Every Meaning text must still be built around one recognizable sphere.
+const explicitArea = /у дружбі|у сім[’']ї|у навчанні|у грошах|у здоров[’']ї|у сні|у побуті|у самооцінці|у майбутньому|у відпочинку|у соцмережах|у роботі|у спорті|у особистих межах|у спілкуванні|у рішеннях|у цілях|в емоціях|у відповідальності|у особистому розвитку/iu;
+assert.ok(
+  INDEPENDENT_LIFE_POOLS.meanings.every((text) => explicitArea.test(text)),
+  "Meaning must name one coherent broad life sphere"
+);
+
+const meaningText = INDEPENDENT_LIFE_POOLS.meanings.join(" ");
 for (const sphere of [
-  /друз|друж/iu,
+  /друж/iu,
   /сім/iu,
   /навчан/iu,
   /грош/iu,
@@ -65,14 +74,8 @@ for (const sphere of [
   /відповідальн/iu,
   /розвит/iu
 ]) {
-  assert.match(broadText, sphere, `missing broad life sphere: ${sphere}`);
+  assert.match(meaningText, sphere, `missing broad life sphere: ${sphere}`);
 }
-
-assert.doesNotMatch(
-  broadText,
-  /під час прогулянки з друзями|коли друг не відповідає ввечері|перед конкретною контрольною|після уроків з друзями|варіант \d+-\d+-\d+/iu,
-  "shared pools should stay broad and must not fake uniqueness with visible technical indices"
-);
 
 assert.ok(
   INDEPENDENT_LIFE_POOLS.gains.every((text) =>
@@ -83,18 +86,10 @@ assert.ok(
 
 for (const text of INDEPENDENT_LIFE_POOLS.results) {
   const [body, alternative, nextStep] = splitSentences(text).map((value) => value.trim());
-  assert.match(body, /^Ти відчуваєш/iu, "result sentence 1 must describe felt bodily relief");
-  assert.match(body, /плеч|шиї|груд|живот|щелеп|спин|рук|горл|голов|тіл/iu, "result sentence 1 must name the body");
-  assert.match(
-    alternative,
-    /^Тепер легше побачити інший спосіб дії:/iu,
-    "result sentence 2 must make another way of acting easier to see"
-  );
-  assert.match(
-    nextStep,
-    /^Ти краще розумієш наступний крок/iu,
-    "result sentence 3 must clarify the next step"
-  );
+  assert.match(body, /^Ти відчуваєш/iu, "result sentence 1 must describe bodily relief");
+  assert.match(body, BODY, "result sentence 1 must name the body");
+  assert.match(alternative, ALT_ACTION, "result sentence 2 must show another way of acting");
+  assert.match(nextStep, NEXT_STEP, "result sentence 3 must clarify the next step");
 }
 
 const deterministicSamples = [0, 37, 999, 1999, 2000, 3999].map((index) => getIndependentLifeVariant(index));
@@ -155,13 +150,7 @@ for (const level of primaryLevels) {
 const worstCard = (problemName, nextBlock = "") =>
   `📖 *Інструкція:* Прочитай текст повільно від початку до кінця.\n\n🔎 *Проблема: ${problemName}*\n\n🔹 *Проблема*\n${longestProblem}\n\n🪞 *Вторинна вигода*\n${longestGain}\n\n🌟 *Значення в житті*\n${longestMeaning}\n\n🔑 *Афірмація*\n${longestAffirmation}\n\n🔁 Повтори афірмацію 9 разів.\n\n✨ *Результат*\n${longestResult}${nextBlock}`;
 
-assert.ok(
-  worstCard(longestFutureName).length < 4096,
-  `generic theoretical worst-case card exceeds Telegram limit: ${worstCard(longestFutureName).length}`
-);
-assert.ok(
-  worstCard(longestPrimaryName, longestNextBlock).length < 4096,
-  `primary theoretical worst-case card exceeds Telegram limit: ${worstCard(longestPrimaryName, longestNextBlock).length}`
-);
+assert.ok(worstCard(longestFutureName).length < 4096, "generic theoretical worst-case card exceeds Telegram limit");
+assert.ok(worstCard(longestPrimaryName, longestNextBlock).length < 4096, "primary theoretical worst-case card exceeds Telegram limit");
 
-console.log(`✅ Shared pools: 5 × ${POOL_SIZE}, three semantic axes per text, independent random mixing, Telegram worst-case safe`);
+console.log(`✅ Shared pools: 5 × ${POOL_SIZE}, coherent per-section scenarios, independent random mixing, Telegram safe`);
