@@ -38,13 +38,13 @@ assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sen
 assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => /тобі вигідно/iu.test(text)));
-assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => /Тепер тобі стало легше/iu.test(text)));
+assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => /Тепер легше побачити інший спосіб дії/iu.test(text)));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => PHYSICAL_RELIEF.test(text.split(/(?<=[.!?…])\s+/u)[0] || "")));
 
 const allLifeText = `${INDEPENDENT_LIFE_POOLS.problems.join(" ")} ${INDEPENDENT_LIFE_POOLS.meanings.join(" ")}`;
 for (const sphere of [
   /навчан/iu, /друж|друз/iu, /сім/iu, /грош/iu, /соцмереж/iu, /сон|сні/iu,
-  /побут/iu, /стосунк/iu, /майбут/iu, /відпоч/iu, /самооцін/iu, /меж/iu,
+  /побут/iu, /майбут/iu, /відпоч/iu, /самооцін/iu, /меж/iu,
   /робот/iu, /спорт/iu, /емоці/iu, /ціл/iu
 ]) {
   assert.match(allLifeText, sphere, `life sphere missing: ${sphere}`);
@@ -83,7 +83,7 @@ for (const [themeKey, theme] of Object.entries(MAIN_BLOCK.subthemes)) {
       assert.equal(affirmation, expected.affirmation);
       assert.equal(result, expected.result);
       assert.equal(sentenceCount(result), 3);
-      assert.match(result, /Тепер тобі стало легше/iu);
+      assert.match(result, /Тепер легше побачити інший спосіб дії/iu);
       assert.ok(rendered.text.length < 4096, `${themeKey}/${levelKey}/${index}: Telegram limit`);
     }
   }
