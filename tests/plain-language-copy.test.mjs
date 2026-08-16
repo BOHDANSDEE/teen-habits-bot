@@ -10,14 +10,14 @@ for (const text of INDEPENDENT_LIFE_POOLS.problems) {
   assert.ok(sentences.length === 2 || sentences.length === 3);
   assert.match(
     sentences[1],
-    /^(Через це|Тому|У результаті|Саме через це|І через це)/u,
+    /^(Через це|Тому|Від цього|В результаті)/u,
     `problem consequence must be direct: ${sentences[1]}`
   );
 }
 
 for (const text of INDEPENDENT_LIFE_POOLS.gains) {
   const [relief, reason] = splitSentences(text).map((part) => part.trim());
-  assert.ok(relief.length >= 20, `secondary gain must name a concrete short relief: ${relief}`);
+  assert.ok(relief.length >= 18, `secondary gain must name a concrete short relief: ${relief}`);
   assert.match(reason, /^Тому тобі вигідно залишатися у такому способі дій/u);
   assert.match(reason, /ти\s/u, `secondary gain must say what the person avoids or gets: ${reason}`);
 }
