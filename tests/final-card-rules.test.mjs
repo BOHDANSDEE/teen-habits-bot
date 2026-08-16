@@ -9,6 +9,7 @@ import { cleanLevelName } from "../src/level-output-pools.js";
 const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/gu) || [];
 const sentenceCount = (text) => splitSentences(text).length;
 const ALT_ACTION = /(інший спосіб дії|як діяти інакше)/iu;
+const BODY = /плеч|ши[яї]|груд|жив[іо]т|щелеп|спин|рук|горл|голов|тіл/iu;
 
 assert.equal(POOL_SIZE, 4000);
 
@@ -45,7 +46,7 @@ assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) ===
 for (const text of INDEPENDENT_LIFE_POOLS.results) {
   const [body, alternative, nextStep] = splitSentences(text).map((part) => part.trim());
   assert.match(body, /^Ти відчуваєш/iu);
-  assert.match(body, /плеч|шиї|груд|живот|щелеп|спин|рук|горл|голов|тіл/iu);
+  assert.match(body, BODY);
   assert.match(alternative, ALT_ACTION);
   assert.match(nextStep, /^Наступний крок ясніший:/iu);
   assert.doesNotMatch(text, /виліку|повністю зник|більше ніколи/iu);
