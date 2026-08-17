@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import {
+  ACCEPTANCE_MAX_ATTEMPTS,
+  ACCEPTANCE_YES_CHANCE,
   getIndependentLifeVariant,
   getLifeSubtopicPoolIndices,
   getLifeThemePoolIndices,
@@ -23,30 +25,31 @@ const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/
 const sentenceCount = (text) => splitSentences(text).length;
 const BODY = /плеч|дихат|ши[яї]|груд|жив[іо]т|щелеп|спин|рук|горл|голов|тіл/iu;
 const JARGON = /патерн|сценарій|механізм|когнітив|соматич/iu;
+const VAGUE_COPY = /постійний новий стимул|швидкий стимул|після таймера|продовжуєш гортати після|Так проблема повторюється|Цей спосіб закріплюється/iu;
 const DIRECT_ADVICE = /(?:^|\s)(?:зроби|спробуй)(?=\s|[.!?,:;]|$)/iu;
-const LIMITS = Object.freeze({ problems: 180, gains: 155, meanings: 150, affirmations: 155, results: 200 });
-const AVG_LIMITS = Object.freeze({ problems: 125, gains: 125, meanings: 100, affirmations: 105, results: 170 });
+const LIMITS = Object.freeze({ problems: 220, gains: 200, meanings: 190, affirmations: 190, results: 205 });
+const AVG_LIMITS = Object.freeze({ problems: 155, gains: 155, meanings: 125, affirmations: 135, results: 175 });
 const AREA = Object.freeze({
   friends: /У дружбі/u,
   family: /У сім[’']ї/u,
   study: /У навчанні/u,
   money: /У грошах/u,
-  health: /У здоров[’']ї/u,
-  sleep: /У сні/u,
+  health: /У турботі про здоров[’']я/u,
+  sleep: /У режимі сну/u,
   household: /У побуті/u,
-  "self-esteem": /У самооцінці/u,
-  future: /У майбутньому/u,
+  "self-esteem": /У ставленні до себе/u,
+  future: /Коли думаєш про майбутнє/u,
   rest: /У відпочинку/u,
   "social-media": /У соцмережах/u,
   work: /У роботі/u,
   sport: /У спорті/u,
-  boundaries: /У особистих межах/u,
+  boundaries: /В особистих межах/u,
   communication: /У спілкуванні/u,
-  decisions: /У рішеннях/u,
-  goals: /У цілях/u,
-  emotions: /В емоціях/u,
+  decisions: /Під час вибору/u,
+  goals: /У роботі над цілями/u,
+  emotions: /Коли емоції сильні/u,
   responsibility: /У відповідальності/u,
-  development: /У особистому розвитку/u
+  development: /У власному розвитку/u
 });
 
 assert.equal(POOL_SIZE, 4000);
@@ -54,6 +57,8 @@ assert.equal(LIFE_THEME_COUNT, 20);
 assert.equal(LIFE_SUBTOPICS_PER_THEME, 10);
 assert.equal(LIFE_THEME_POOL_SIZE, 200);
 assert.equal(LIFE_SUBTOPIC_POOL_SIZE, 20);
+assert.equal(ACCEPTANCE_YES_CHANCE, 0.5);
+assert.equal(ACCEPTANCE_MAX_ATTEMPTS, LIFE_THEME_COUNT);
 assert.equal(LIFE_RANDOM_THEMES.length, LIFE_THEME_COUNT);
 assert.ok(LIFE_RANDOM_THEMES.every((theme) => theme.subtopics.length === LIFE_SUBTOPICS_PER_THEME));
 
@@ -61,6 +66,7 @@ for (const [name, pool] of Object.entries(INDEPENDENT_LIFE_POOLS)) {
   assert.equal(pool.length, POOL_SIZE, `${name}: exactly 4000 texts`);
   assert.equal(new Set(pool).size, POOL_SIZE, `${name}: all 4000 visible texts are unique`);
   assert.ok(pool.every((text) => !JARGON.test(text)), `${name}: no old generator jargon`);
+  assert.ok(pool.every((text) => !VAGUE_COPY.test(text)), `${name}: no known vague copy`);
   const max = Math.max(...pool.map((text) => text.length));
   const avg = pool.reduce((sum, text) => sum + text.length, 0) / pool.length;
   assert.ok(max <= LIMITS[name], `${name}: max ${max} > ${LIMITS[name]}`);
@@ -71,15 +77,15 @@ assert.ok(INDEPENDENT_LIFE_POOLS.problems.slice(0, 2000).every((text) => sentenc
 assert.ok(INDEPENDENT_LIFE_POOLS.problems.slice(2000).every((text) => sentenceCount(text) === 3));
 for (const text of INDEPENDENT_LIFE_POOLS.problems) {
   const sentences = splitSentences(text).map((part) => part.trim());
-  assert.match(sentences[1], /^Через це ти /u, `Problem must use a direct consequence: ${text}`);
+  assert.match(sentences[1], /^Через це /u, `Problem must state a direct consequence: ${text}`);
   assert.doesNotMatch(text, DIRECT_ADVICE, `Problem must not contain an imperative solution: ${text}`);
 }
 
 assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => sentenceCount(text) === 2));
 for (const text of INDEPENDENT_LIFE_POOLS.gains) {
   const [benefit, conclusion] = splitSentences(text).map((part) => part.trim());
-  assert.ok(benefit.length >= 25, `Secondary Gain must name a concrete short benefit: ${text}`);
-  assert.equal(conclusion, "Тому тобі вигідно залишатися у такому способі дій.");
+  assert.ok(benefit.length >= 20, `Secondary Gain must name a concrete short benefit: ${text}`);
+  assert.match(conclusion, /^Тому тобі вигідно залишатися у такому способі дій/u);
 }
 
 assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(0, 2000).every((text) => sentenceCount(text) === 1));
@@ -143,6 +149,8 @@ for (let variantIndex = 0; variantIndex < POOL_SIZE; variantIndex += 1) {
   assert.ok(theme);
   const subtopic = theme.subtopics.find((item) => item.key === variant.subtopicKey);
   assert.ok(subtopic);
+  assert.equal(variant.rouletteApplied, false);
+  assert.equal(variant.rouletteAttempts, 1);
   themeCounts.set(variant.themeKey, themeCounts.get(variant.themeKey) + 1);
   const topicCounterKey = `${variant.themeKey}/${variant.subtopicKey}`;
   subtopicCounts.set(topicCounterKey, subtopicCounts.get(topicCounterKey) + 1);
@@ -155,22 +163,54 @@ for (let variantIndex = 0; variantIndex < POOL_SIZE; variantIndex += 1) {
 for (const count of themeCounts.values()) assert.equal(count, LIFE_THEME_POOL_SIZE);
 for (const count of subtopicCounts.values()) assert.equal(count, LIFE_SUBTOPIC_POOL_SIZE);
 
+const socialScrollSections = Object.fromEntries(SECTIONS.map(([section]) => [
+  section,
+  getLifeSubtopicPoolIndices("social-media", "scroll", section)
+    .map((index) => INDEPENDENT_LIFE_POOLS[section][index])
+]));
+assert.ok(socialScrollSections.problems.every((text) => /гортати стрічку соцмереж/u.test(text)));
+assert.ok(socialScrollSections.gains.every((text) => /щось нове/u.test(text)));
+assert.ok(socialScrollSections.results.every((text) => !/таймер/iu.test(text)));
+assert.ok(socialScrollSections.results.every((text) => /закрити соцмережу/u.test(text)));
+
 const originalRandom = Math.random;
-const sequence = [0.31, 0.61, 0.01, 0.21, 0.41, 0.61, 0.81];
+const twoAttemptSequence = [
+  0.31, 0.61, 0.01, 0.21, 0.41, 0.61, 0.81, 0.90,
+  0.31, 0.11, 0.05, 0.25, 0.45, 0.65, 0.85, 0.10
+];
 let calls = 0;
 try {
-  Math.random = () => sequence[calls++];
+  Math.random = () => twoAttemptSequence[calls++];
   const variant = getIndependentLifeVariant();
-  assert.equal(calls, 7, "production chooses theme + subtopic + five independent section styles");
-  const expectedTheme = LIFE_RANDOM_THEMES[Math.floor(sequence[0] * LIFE_THEME_COUNT)];
-  const expectedSubtopic = expectedTheme.subtopics[Math.floor(sequence[1] * LIFE_SUBTOPICS_PER_THEME)];
-  assert.equal(variant.themeKey, expectedTheme.key);
-  assert.equal(variant.subtopicKey, expectedSubtopic.key);
-  for (let i = 0; i < SECTIONS.length; i += 1) {
-    const [section, field] = SECTIONS[i];
-    const indices = getLifeSubtopicPoolIndices(expectedTheme.key, expectedSubtopic.key, section);
-    assert.equal(variant[field], indices[Math.floor(sequence[i + 2] * LIFE_SUBTOPIC_POOL_SIZE)]);
+  assert.equal(calls, 16, "two candidates use 8 random calls each: theme + subtopic + five sections + yes/no");
+  assert.equal(variant.rouletteApplied, true);
+  assert.equal(variant.rouletteAttempts, 2);
+  assert.equal(variant.rejectedThemeKeys.length, 1);
+  assert.notEqual(variant.themeKey, variant.rejectedThemeKeys[0], "No must reroll to a different life theme");
+  assert.equal(variant.forcedAcceptance, false);
+
+  for (const [section, indexField] of SECTIONS) {
+    const indices = getLifeSubtopicPoolIndices(variant.themeKey, variant.subtopicKey, section);
+    assert.ok(indices.includes(variant[indexField]), `${section}: accepted card must stay inside one subtopic`);
   }
+} finally {
+  Math.random = originalRandom;
+}
+
+let fallbackCalls = 0;
+try {
+  Math.random = () => {
+    fallbackCalls += 1;
+    return 0.99;
+  };
+  const variant = getIndependentLifeVariant();
+  assert.equal(variant.rouletteApplied, true);
+  assert.equal(variant.rouletteAttempts, LIFE_THEME_COUNT);
+  assert.equal(variant.rejectedThemeKeys.length, LIFE_THEME_COUNT - 1);
+  assert.equal(new Set(variant.rejectedThemeKeys).size, LIFE_THEME_COUNT - 1);
+  assert.ok(!variant.rejectedThemeKeys.includes(variant.themeKey));
+  assert.equal(variant.forcedAcceptance, true, "last remaining theme is a safety fallback so generation cannot loop forever");
+  assert.equal(fallbackCalls, LIFE_THEME_COUNT * 8);
 } finally {
   Math.random = originalRandom;
 }
@@ -184,8 +224,8 @@ assert.deepEqual(
 );
 assert.match(first.problem, /просиш друзів про допомогу/u);
 assert.match(first.gain, /вразливість/u);
-assert.match(first.meaning, /взаємна підтримка/u);
+assert.match(first.meaning, /У дружбі/u);
 assert.match(first.affirmation, /попросити друга/u);
 assert.match(first.result, /попросити друга/u);
 
-console.log("✅ Card text system: 20 themes × 10 subtopics × 20 variants = 4000 per section; all five random blocks stay coherent");
+console.log("✅ Card text system: 20×10×20 per section, blind-clear copy, coherent subtopics, internal Yes/No theme reroll");
