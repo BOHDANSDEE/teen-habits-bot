@@ -70,7 +70,7 @@ function parts(topic) {
     name: topic[1],
     behavior: topic[2],
     cost: topic[3],
-    benefit: topic[4],
+    benefit: String(topic[4]).replace(/сценарій/giu, "спосіб"),
     principle: topic[5],
     permission: topic[6],
     choice: topic[7],
