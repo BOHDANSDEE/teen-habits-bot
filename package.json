@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "test": "node tests/concise-flow.test.mjs && node tests/generic-500-flow.test.mjs && node tests/direct-body-copy.test.mjs && node tests/card-text-system.test.mjs && node tests/future-blocks-scale.test.mjs && node tests/navigation-grid.test.mjs && node tests/webhook.test.mjs"
+    "test": "node tests/concise-flow.test.mjs && node tests/generic-500-flow.test.mjs && node tests/direct-body-copy.test.mjs && node tests/text-metrics.tmp.mjs && node tests/card-text-system.test.mjs && node tests/future-blocks-scale.test.mjs && node tests/navigation-grid.test.mjs && node tests/webhook.test.mjs"
   },
   "keywords": [],
   "author": "",
