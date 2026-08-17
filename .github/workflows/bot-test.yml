@@ -28,6 +28,11 @@ jobs:
       - run: node --check src/plain-secondary-gain.js
       - run: node --check src/life-meaning-pools.js
       - run: node --check src/level-output-pools.js
+      - run: node --check src/card-text-data-1.js
+      - run: node --check src/card-text-data-2.js
+      - run: node --check src/card-text-data-3.js
+      - run: node --check src/card-text-data-4.js
+      - run: node --check src/card-text-system.js
       - run: node --check src/independent-life-pools.js
       - run: node --check src/direct-body-copy.js
       - run: node --check src/body-state-pools.js
@@ -49,5 +54,5 @@ jobs:
       - run: node --check tests/concise-flow.test.mjs
       - run: node --check tests/generic-500-flow.test.mjs
       - run: node --check tests/direct-body-copy.test.mjs
-      - run: node --check tests/broad-life-pools.test.mjs
+      - run: node --check tests/card-text-system.test.mjs
       - run: npm test
