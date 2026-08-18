@@ -21,52 +21,47 @@ const RAW = Object.freeze([
 ]);
 
 const PROBLEM_OPENERS = Object.freeze([
-  "Ти ",
-  "Іноді ти ",
-  "Часто ти ",
-  "Буває, що ти ",
-  "Часом ти ",
-  "Інколи ти ",
-  "Деколи ти ",
-  "Нерідко ти ",
-  "У деякі дні ти ",
-  "У знайомій ситуації ти "
+  "ти ",
+  "іноді ти ",
+  "часом ти ",
+  "буває, ти ",
+  "інколи ти ",
+  "часто ти ",
+  "буває так, що ти ",
+  "час від часу ти ",
+  "іноді буває, що ти ",
+  "у деякі моменти ти "
 ]);
 
-const GAIN_FRAMES = Object.freeze([
-  "{benefit}",
-  "Зараз {benefit}",
-  "Спочатку {benefit}",
-  "На короткий час {benefit}",
-  "У цій ситуації {benefit}",
-  "Коли дієш по-старому, {benefit}",
-  "Поки все лишається як є, {benefit}",
-  "Поки нічого не змінюєш, {benefit}",
-  "Через звичний спосіб {benefit}",
-  "У знайомому способі {benefit}",
-  "Одразу {benefit}",
-  "Ненадовго {benefit}",
-  "На мить {benefit}",
-  "Поки не робиш інакше, {benefit}",
-  "Якщо нічого не міняти, {benefit}",
-  "Коли лишаєш усе як є, {benefit}",
-  "Поки тримаєшся старого способу, {benefit}",
-  "У цей момент {benefit}",
-  "Перед зміною {benefit}",
-  "Поки не робиш нового кроку, {benefit}"
+const GAIN_PREFIXES = Object.freeze([
+  "",
+  "на мить ",
+  "зараз ",
+  "одразу ",
+  "спочатку ",
+  "ненадовго ",
+  "у цей момент ",
+  "поки нічого не змінюєш, ",
+  "коли дієш як звик, ",
+  "якщо залишити все як є, "
+]);
+
+const GAIN_ENDINGS = Object.freeze([
+  "Тому тобі вигідно залишатися у такому способі дій — так зараз легше нічого не змінювати.",
+  "Тому тобі вигідно залишатися у такому способі дій — зміни можна відкласти ще трохи."
 ]);
 
 const MEANING_FRAMES = Object.freeze([
-  "{context} ти {cost}",
-  "{context} через це ти {cost}",
-  "{context} тому ти {cost}",
-  "{context} з часом ти {cost}",
-  "{context} у підсумку ти {cost}",
-  "{context} так ти {cost}",
-  "{context} через цю звичку ти {cost}",
-  "{context} через таку реакцію ти {cost}",
-  "{context} через такий вибір ти {cost}",
-  "{context} через цей спосіб ти {cost}"
+  "{label}: {cost}",
+  "{label}: через це {cost}",
+  "{label}: з часом {cost}",
+  "{label}: у таких ситуаціях {cost}",
+  "{label}: коли це повторюється, {cost}",
+  "{label}: через цю звичку {cost}",
+  "{label}: у підсумку {cost}",
+  "{label}: так {cost}",
+  "{label}: якщо нічого не змінювати, {cost}",
+  "{label}: коли це стає звичкою, {cost}"
 ]);
 
 const BODY = Object.freeze([
@@ -103,71 +98,94 @@ const TRIPLES = Object.freeze([
 
 const THEME_CONTEXT = Object.freeze({
   friends: "У дружбі",
-  family: "Вдома",
+  family: "У сім’ї",
   study: "Під час навчання",
   money: "Коли йдеться про гроші,",
   health: "Коли дбаєш про здоров’я,",
-  sleep: "Коли готуєшся до сну,",
-  household: "У домашніх справах",
+  sleep: "Коли йдеться про сон,",
+  household: "У побуті",
   "self-esteem": "Коли оцінюєш себе,",
   future: "Коли думаєш про майбутнє,",
-  rest: "Коли відпочиваєш,",
+  rest: "Під час відпочинку",
   "social-media": "У соцмережах",
-  work: "Під час роботи",
-  sport: "Під час тренувань",
-  boundaries: "У стосунках з іншими",
-  communication: "У розмовах",
-  decisions: "Коли треба щось вирішити,",
+  work: "У роботі",
+  sport: "У спорті",
+  boundaries: "Коли йдеться про твої межі,",
+  communication: "У спілкуванні",
+  decisions: "Коли треба зробити вибір,",
   goals: "Коли працюєш над ціллю,",
   emotions: "Коли емоції сильні,",
-  responsibility: "Коли береш на себе обов’язки,",
-  development: "Коли вчишся новому,"
+  responsibility: "Коли відповідаєш за справу,",
+  development: "Коли працюєш над собою,"
+});
+
+const THEME_LABEL = Object.freeze({
+  friends: "Дружба",
+  family: "Сім’я",
+  study: "Навчання",
+  money: "Гроші",
+  health: "Здоров’я",
+  sleep: "Сон",
+  household: "Побут",
+  "self-esteem": "Самооцінка",
+  future: "Майбутнє",
+  rest: "Відпочинок",
+  "social-media": "Соцмережі",
+  work: "Робота",
+  sport: "Спорт",
+  boundaries: "Особисті межі",
+  communication: "Спілкування",
+  decisions: "Рішення",
+  goals: "Цілі",
+  emotions: "Емоції",
+  responsibility: "Відповідальність",
+  development: "Особистий розвиток"
 });
 
 const THEME_PROBLEM_TAIL = Object.freeze({
-  friends: "Так ти частіше мовчиш або підлаштовуєшся.",
-  family: "Так удома легше накопичується напруга.",
-  study: "Так навчання забирає більше сил, ніж потрібно.",
-  money: "Так з грошима стає більше напруги.",
-  health: "Так свої потреби легше пропустити.",
-  sleep: "Так режим сну збивається ще сильніше.",
+  friends: "Так у дружбі стає менше прямоти.",
+  family: "Так удома накопичується напруга.",
+  study: "Так навчання забирає більше сил.",
+  money: "Так гроші частіше додають напруги.",
+  health: "Так легше пропустити прості потреби тіла.",
+  sleep: "Так режим сну збивається ще більше.",
   household: "Так домашні справи швидше накопичуються.",
-  "self-esteem": "Так ти частіше знецінюєш себе.",
-  future: "Так думки про майбутнє забирають більше сил.",
-  rest: "Так навіть після відпочинку сил повертається менше.",
-  "social-media": "Так телефон забирає більше часу, ніж ти планував.",
-  work: "Так робочий день виснажує сильніше.",
-  sport: "Так тренування стають менш регулярними.",
-  boundaries: "Так ти частіше відсуваєш власні межі.",
+  "self-esteem": "Так ти стаєш жорсткішим до себе.",
+  future: "Так думки про майбутнє забирають більше уваги.",
+  rest: "Так відпочинок гірше повертає сили.",
+  "social-media": "Так соцмережі забирають більше часу й уваги.",
+  work: "Так робочий день стає напруженішим.",
+  sport: "Так складніше тримати стабільний ритм руху.",
+  boundaries: "Так ти частіше поступаєшся своїми межами.",
   communication: "Так у розмовах стає більше непорозумінь.",
-  decisions: "Так навіть простий вибір забирає більше сил.",
-  goals: "Так рух до цілі постійно збивається.",
+  decisions: "Так вибір забирає більше сил.",
+  goals: "Так рух до цілі частіше переривається.",
   emotions: "Так емоція довше керує твоєю реакцією.",
-  responsibility: "Так домовленості частіше залишаються невиконаними.",
-  development: "Так прогрес частіше йде ривками."
+  responsibility: "Так на домовленості складніше покладатися.",
+  development: "Так зміни частіше йдуть ривками."
 });
 
 const THEME_IMPACT = Object.freeze({
-  friends: "Через це у дружбі стає менше довіри й прямоти.",
-  family: "Через це вдома стає важче домовлятися.",
-  study: "Через це навчання забирає більше часу й сил.",
-  money: "Через це з грошима стає більше напруги.",
-  health: "Через це свої потреби легше пропустити.",
+  friends: "Через це дружба стає менш відкритою.",
+  family: "Через це вдома стає більше напруги й непорозумінь.",
+  study: "Через це навчання забирає зайві сили й час.",
+  money: "Через це фінансові рішення стають менш передбачуваними.",
+  health: "Через це складніше вчасно помічати свої потреби.",
   sleep: "Через це режим сну стає менш стабільним.",
-  household: "Через це домашні справи швидше накопичуються.",
+  household: "Через це побут забирає більше часу й уваги.",
   "self-esteem": "Через це одна невдача сильніше впливає на оцінку себе.",
-  future: "Через це думки про майбутнє забирають більше уваги.",
+  future: "Через це невизначеність забирає більше уваги.",
   rest: "Через це відпочинок гірше повертає сили.",
   "social-media": "Через це менше часу лишається на сон, справи або відпочинок.",
   work: "Через це робочий день стає напруженішим.",
-  sport: "Через це складніше тримати регулярний рух.",
-  boundaries: "Через це власні потреби й межі частіше відсуваються.",
-  communication: "Через це в розмовах стає більше непорозумінь.",
-  decisions: "Через це навіть простий вибір забирає більше часу й сил.",
+  sport: "Через це складніше тримати стабільний ритм руху.",
+  boundaries: "Через це твої потреби й межі частіше відсуваються.",
+  communication: "Через це в розмовах накопичуються непорозуміння.",
+  decisions: "Через це вибір забирає більше часу й сил.",
   goals: "Через це рух до цілі стає менш послідовним.",
   emotions: "Через це емоція частіше керує реакцією замість тебе.",
-  responsibility: "Через це тобі й іншим важче покладатися на домовленості.",
-  development: "Через це прогрес частіше йде ривками."
+  responsibility: "Через це тобі й іншим складніше покладатися на домовленості.",
+  development: "Через це зміни частіше йдуть ривками."
 });
 
 const CLARITY_REPLACEMENTS = Object.freeze([
@@ -178,23 +196,30 @@ const CLARITY_REPLACEMENTS = Object.freeze([
   ["швидкий потік нових стимулів", "можливість одразу перемкнутися на щось нове"],
   ["можливість не переривати приємний стимул", "можливість ще трохи не зупиняти приємний перегляд"],
   ["можливість не залишатися без стимулу", "можливість не залишатися без нових картинок і повідомлень"],
-  ["відпочинок не завжди потребує нового стимулу щосекунди", "відпочинок не обов’язково має бути заповнений новими картинками й повідомленнями"],
-  ["зменшувати зайві стимули перед сном", "прибирати зайві екрани й активні справи перед сном"],
   ["можливість не переривати потік", "можливість не відриватися від екрана"],
   ["дозволяти собі неідеальний контент", "дозволяти собі неідеальні публікації"],
   ["не тримати контент, який постійно шкодить настрою", "не залишати в стрічці те, що постійно псує настрій"],
   ["залишатися з фантазією замість досвіду", "залишатися лише з уявленням замість реального досвіду"],
   ["готовий зовнішній критерій успіху", "готову чужу мірку успіху"],
   ["готову зовнішню мірку", "готову чужу мірку"],
-  ["простий видимий критерій", "просту видиму мірку"],
-  ["критерій готовності", "чітка ознака готовності"],
-  ["перевірити критерій готовності", "перевірити, чи виконані головні вимоги"],
+  ["простий видимий критерій", "простий зрозумілий орієнтир"],
+  ["швидкий вихід напруги", "можливість швидко випустити напругу"],
+  ["можливість швидко завершити момент вибору", "можливість одразу відповісти й не думати далі"],
   ["коли ресурс уже закінчується", "коли сил уже майже немає"],
-  ["час теж є ресурсом, для якого можна ставити межі", "твій час теж потребує меж"],
-  ["не вимагати від себе досвіду до досвіду", "не вимагати від себе вмінь, яких ще не встиг набути"],
-  ["вважаєш, що з родиною не можна мати окремих меж", "думаєш, що з рідними не можна мати власні межі"],
-  ["можливість не руйнувати звичний порядок", "можливість не змінювати звичний порядок"],
-  ["говорити про них без віддалення", "говорити про свої межі без сварки"]
+  ["перевірити критерій готовності", "перевірити, чи виконані головні вимоги"],
+  ["мати один зрозумілий критерій", "мати один зрозумілий орієнтир"],
+  ["записати два головні критерії", "записати дві головні умови вибору"],
+  ["записати три критерії", "записати три важливі умови"],
+  ["зі своїми критеріями", "зі своїми умовами вибору"],
+  ["поставити точку завершення вечора", "вирішити, о котрій закінчуєш вечір"],
+  ["поставити зрозумілу межу денній паузі", "вирішити наперед, скільки триватиме денний сон"],
+  ["новизну й відчуття нового старту", "відчуття нового старту"],
+  ["можливість мати красивий намір без конкретного зобов’язання", "можливість мати хорошу ідею й поки нічого не робити"],
+  ["можливість не зустрічатися з конкретним результатом", "можливість не перевіряти, чи справді є прогрес"],
+  ["можливість ще не брати наслідки вибору", "можливість ще трохи не відповідати за вибір"],
+  ["зробити зворотний пробний крок", "зробити невелику пробу, якщо рішення можна змінити"],
+  ["сценарій", "спосіб"],
+  ["патерн", "звичка"]
 ]);
 
 const TOPIC_OVERRIDES = Object.freeze({
@@ -202,20 +227,27 @@ const TOPIC_OVERRIDES = Object.freeze({
     behavior: "продовжуєш гортати стрічку соцмереж після того, як уже хотів зупинитися",
     cost: "відкладаєш сон або інші справи",
     benefit: "можливість постійно бачити щось нове",
-    principle: "заздалегідь визначений час допомагає не втрачати пів години непомітно",
-    permission: "самому вирішувати час у стрічці",
-    choice: "зупинятися у визначений момент",
-    alternative: "визначити час для стрічки наперед",
-    nextStep: "закрити соцмережу, коли час мине"
+    permission: "самому вирішувати, скільки часу провести у стрічці",
+    alternative: "заздалегідь вирішити, скільки часу провести у стрічці",
+    nextStep: "закрити соцмережу, коли цей час мине"
   }),
   "social-media/auto": Object.freeze({
     behavior: "відкриваєш стрічку соцмереж автоматично, навіть без конкретної причини",
     benefit: "можливість одразу побачити щось нове",
-    alternative: "запитати себе, навіщо відкриваю стрічку",
-    nextStep: "не відкривати соцмережу без причини"
+    alternative: "запитати себе, навіщо відкриваєш стрічку",
+    nextStep: "не відкривати соцмережу, якщо конкретної причини немає"
+  }),
+  "social-media/limits": Object.freeze({
+    benefit: "можливість ще трохи не зупиняти перегляд",
+    alternative: "не продовжувати ліміт часу автоматично",
+    nextStep: "закрити стрічку, коли ліміт часу закінчиться"
   }),
   "sleep/phone": Object.freeze({
     benefit: "можливість без зусиль бачити щось нове перед сном"
+  }),
+  "sleep/nap": Object.freeze({
+    alternative: "заздалегідь вирішити, скільки триватиме денний сон",
+    nextStep: "поставити будильник на обраний час"
   }),
   "rest/scroll": Object.freeze({
     benefit: "можливість одразу перемкнутися на щось нове",
@@ -225,14 +257,18 @@ const TOPIC_OVERRIDES = Object.freeze({
   "health/screen": Object.freeze({
     benefit: "можливість не відриватися від екрана"
   }),
-  "boundaries/family": Object.freeze({
-    behavior: "думаєш, що з рідними не можна мати власні межі",
-    cost: "частіше терпиш те, що тобі не підходить",
-    benefit: "можливість не змінювати звичний порядок",
-    permission: "мати власні межі навіть з близькими",
-    choice: "говорити про свої межі без сварки",
-    alternative: "спокійно назвати одну свою межу",
-    nextStep: "пояснити, що саме тобі не підходить"
+  "work/finish": Object.freeze({
+    alternative: "перевірити, чи виконані головні вимоги",
+    nextStep: "завершити роботу, якщо головні вимоги вже виконані"
+  }),
+  "goals/measure": Object.freeze({
+    permission: "мати один зрозумілий орієнтир прогресу",
+    alternative: "обрати один зрозумілий показник прогресу",
+    nextStep: "перевіряти його раз на тиждень"
+  }),
+  "decisions/mistake": Object.freeze({
+    alternative: "перевірити, чи можна змінити рішення пізніше",
+    nextStep: "зробити невелику пробу, якщо рішення можна змінити"
   })
 });
 
@@ -241,44 +277,24 @@ const sentence = (text = "") => {
   return value ? `${value}.` : "";
 };
 
-const capitalize = (text = "") => {
-  const value = String(text || "");
-  return value ? `${value[0].toUpperCase()}${value.slice(1)}` : "";
-};
-
-const lowerFirst = (text = "") => {
-  const value = String(text || "").trim();
-  return value ? `${value[0].toLowerCase()}${value.slice(1)}` : "";
-};
-
 const fill = (frame, values) =>
   Object.entries(values).reduce((text, [key, value]) => text.replaceAll(`{${key}}`, value), frame);
 
 const normalizePhrase = (value = "") => {
-  let text = String(value || "").trim().replace(/сценарій/giu, "спосіб");
+  let text = String(value || "").trim();
   for (const [from, to] of CLARITY_REPLACEMENTS) text = text.replaceAll(from, to);
   return text;
 };
 
 const contextFor = (theme) => THEME_CONTEXT[theme[0]] || theme[2] || `У темі «${theme[1]}»`;
+const labelFor = (theme) => THEME_LABEL[theme[0]] || theme[1];
 
-function gainBenefitClause(benefit) {
+function benefitAction(benefit) {
   const value = normalizePhrase(benefit);
-  if (/^можливість\s+/u.test(value)) return `тобі легше ${value.replace(/^можливість\s+/u, "")}`;
-  if (/^відчуття(?:,|\s)/u.test(value)) return `ти зберігаєш ${value}`;
+  if (/^можливість\s+/u.test(value)) return `ти можеш ${value.replace(/^можливість\s+/u, "")}`;
+  if (/^відчуття,?\s+що\s+/u.test(value)) return `ти відчуваєш, що ${value.replace(/^відчуття,?\s+що\s+/u, "")}`;
+  if (/^відчуття\s+/u.test(value)) return `ти відчуваєш ${value.replace(/^відчуття\s+/u, "")}`;
   return `ти отримуєш ${value}`;
-}
-
-function firstPersonAction(value = "") {
-  return normalizePhrase(value)
-    .replace(/\bколи ти зможеш\b/gu, "коли зможу")
-    .replace(/\bтобі\b/gu, "мені")
-    .replace(/\bтебе\b/gu, "мене")
-    .replace(/\bтвої\b/gu, "мої")
-    .replace(/\bтвоя\b/gu, "моя")
-    .replace(/\bтвою\b/gu, "мою")
-    .replace(/\bтвій\b/gu, "мій")
-    .replace(/\bтвоє\b/gu, "моє");
 }
 
 if (RAW.length !== LIFE_THEME_COUNT) throw new Error("expected 20 life themes");
@@ -291,7 +307,7 @@ for (const theme of RAW) {
 export const LIFE_RANDOM_THEMES = Object.freeze(RAW.map((theme) => Object.freeze({
   key: theme[0],
   name: theme[1],
-  area: contextFor(theme),
+  area: labelFor(theme),
   subtopics: Object.freeze(theme[5].map((topic) => Object.freeze({
     key: topic[0],
     name: topic[1]
@@ -331,41 +347,37 @@ function parts(theme, topic) {
 function buildProblem(theme, topic, style) {
   const value = parts(theme, topic);
   const local = style % 10;
-  const first = sentence(`${PROBLEM_OPENERS[local]}${value.behavior}`);
+  const first = sentence(`${contextFor(theme)} ${PROBLEM_OPENERS[local]}${value.behavior}`);
   const second = sentence(`Через це ${value.cost}`);
   return style < 10
     ? `${first} ${second}`
     : `${first} ${second} ${THEME_PROBLEM_TAIL[theme[0]]}`;
 }
 
-function buildGain(theme, topic, style, clarifyTopic = false) {
+function buildGain(theme, topic, style) {
   const value = parts(theme, topic);
-  const benefit = fill(GAIN_FRAMES[style], {
-    benefit: gainBenefitClause(value.benefit)
-  });
-  const clearBenefit = clarifyTopic
-    ? `${contextFor(theme)}, коли йдеться про «${lowerFirst(value.name)}», ${benefit}`
-    : benefit;
-  const first = sentence(capitalize(clearBenefit));
-  return `${first} Тому тобі вигідно залишатися у такому способі дій.`;
+  const local = style % 10;
+  const first = sentence(`${contextFor(theme)} ${GAIN_PREFIXES[local]}${benefitAction(value.benefit)}`);
+  const second = GAIN_ENDINGS[style < 10 ? 0 : 1];
+  return `${first} ${second}`;
 }
 
 function buildMeaning(theme, topic, style) {
   const value = parts(theme, topic);
   const first = sentence(fill(MEANING_FRAMES[style % 10], {
-    context: contextFor(theme),
+    label: labelFor(theme),
     cost: value.cost
   }));
-  return style < 10 ? first : `${first} ${THEME_IMPACT[theme[0]] || theme[3]}`;
+  return style < 10 ? first : `${first} ${THEME_IMPACT[theme[0]]}`;
 }
 
 function buildAffirmation(theme, topic, style) {
   const value = parts(theme, topic);
   const options = [
-    sentence(`Я можу ${firstPersonAction(value.alternative)}`),
-    sentence(`Я маю право ${firstPersonAction(value.permission)}`),
-    sentence(`Я обираю ${firstPersonAction(value.choice)}`),
-    sentence(theme[4])
+    sentence(`Я можу ${value.alternative}`),
+    sentence(`Я маю право ${value.permission}`),
+    sentence(`Я можу ${value.nextStep}`),
+    sentence(normalizePhrase(theme[4]))
   ];
   const combo = style < 10 ? PAIRS[style] : TRIPLES[style - 10];
   return combo.map((index) => options[index]).join(" ");
@@ -387,7 +399,6 @@ const pools = {
   affirmations: Array(POOL_SIZE),
   results: Array(POOL_SIZE)
 };
-const seenGains = new Set();
 
 for (let themeIndex = 0; themeIndex < RAW.length; themeIndex += 1) {
   const theme = RAW[themeIndex];
@@ -396,15 +407,8 @@ for (let themeIndex = 0; themeIndex < RAW.length; themeIndex += 1) {
     for (let style = 0; style < LIFE_SUBTOPIC_POOL_SIZE; style += 1) {
       pools.problems[idx("problems", themeIndex, subtopicIndex, style)] =
         buildProblem(theme, topic, style);
-
-      let gain = buildGain(theme, topic, style);
-      if (seenGains.has(gain)) gain = buildGain(theme, topic, style, true);
-      if (seenGains.has(gain)) {
-        throw new Error(`gain collision after clarification: ${theme[0]}/${topic[0]}/${style}`);
-      }
-      seenGains.add(gain);
-      pools.gains[idx("gains", themeIndex, subtopicIndex, style)] = gain;
-
+      pools.gains[idx("gains", themeIndex, subtopicIndex, style)] =
+        buildGain(theme, topic, style);
       pools.meanings[idx("meanings", themeIndex, subtopicIndex, style)] =
         buildMeaning(theme, topic, style);
       pools.affirmations[idx("affirmations", themeIndex, subtopicIndex, style)] =
