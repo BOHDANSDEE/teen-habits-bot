@@ -25,31 +25,31 @@ const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/
 const sentenceCount = (text) => splitSentences(text).length;
 const BODY = /плеч|дихат|ши[яї]|груд|жив[іо]т|щелеп|спин|рук|горл|голов|тіл/iu;
 const JARGON = /патерн|сценарій|механізм|когнітив|соматич/iu;
-const VAGUE_COPY = /постійний новий стимул|швидкий стимул|після таймера|продовжуєш гортати після|Так проблема повторюється|Цей спосіб закріплюється/iu;
+const VAGUE_COPY = /постійний новий стимул|швидкий стимул|після таймера|продовжуєш гортати після|Так проблема повторюється|Цей спосіб закріплюється|головна вигода|коротка вигода|проста вигода|тут плюс такий|проблема дає наслідок|результат такий|це видно так|час від часу|іншим разом|В особистих межах|говорити про них|без віддалення/iu;
 const DIRECT_ADVICE = /(?:^|\s)(?:зроби|спробуй)(?=\s|[.!?,:;]|$)/iu;
 const LIMITS = Object.freeze({ problems: 220, gains: 200, meanings: 190, affirmations: 190, results: 205 });
 const AVG_LIMITS = Object.freeze({ problems: 155, gains: 155, meanings: 125, affirmations: 135, results: 175 });
 const AREA = Object.freeze({
   friends: /У дружбі/u,
-  family: /У сім[’']ї/u,
-  study: /У навчанні/u,
-  money: /У грошах/u,
-  health: /У турботі про здоров[’']я/u,
-  sleep: /У режимі сну/u,
-  household: /У побуті/u,
-  "self-esteem": /У ставленні до себе/u,
+  family: /Вдома/u,
+  study: /Під час навчання/u,
+  money: /Коли йдеться про гроші/u,
+  health: /Коли дбаєш про здоров[’']я/u,
+  sleep: /Коли готуєшся до сну/u,
+  household: /У домашніх справах/u,
+  "self-esteem": /Коли оцінюєш себе/u,
   future: /Коли думаєш про майбутнє/u,
-  rest: /У відпочинку/u,
+  rest: /Коли відпочиваєш/u,
   "social-media": /У соцмережах/u,
-  work: /У роботі/u,
-  sport: /У спорті/u,
-  boundaries: /В особистих межах/u,
-  communication: /У спілкуванні/u,
-  decisions: /Під час вибору/u,
-  goals: /У роботі над цілями/u,
+  work: /Під час роботи/u,
+  sport: /Під час тренувань/u,
+  boundaries: /У стосунках з іншими/u,
+  communication: /У розмовах/u,
+  decisions: /Коли треба щось вирішити/u,
+  goals: /Коли працюєш над ціллю/u,
   emotions: /Коли емоції сильні/u,
-  responsibility: /У відповідальності/u,
-  development: /У власному розвитку/u
+  responsibility: /Коли береш на себе обов[’']язки/u,
+  development: /Коли вчишся новому/u
 });
 
 assert.equal(POOL_SIZE, 4000);
@@ -77,6 +77,7 @@ assert.ok(INDEPENDENT_LIFE_POOLS.problems.slice(0, 2000).every((text) => sentenc
 assert.ok(INDEPENDENT_LIFE_POOLS.problems.slice(2000).every((text) => sentenceCount(text) === 3));
 for (const text of INDEPENDENT_LIFE_POOLS.problems) {
   const sentences = splitSentences(text).map((part) => part.trim());
+  assert.match(sentences[0], /^(?:Ти|Іноді ти|Часто ти|Буває, що ти|Часом ти|Інколи ти|Деколи ти|Нерідко ти|У деякі дні ти|У знайомій ситуації ти)\s/u);
   assert.match(sentences[1], /^Через це /u, `Problem must state a direct consequence: ${text}`);
   assert.doesNotMatch(text, DIRECT_ADVICE, `Problem must not contain an imperative solution: ${text}`);
 }
@@ -86,6 +87,7 @@ for (const text of INDEPENDENT_LIFE_POOLS.gains) {
   const [benefit, conclusion] = splitSentences(text).map((part) => part.trim());
   assert.ok(benefit.length >= 20, `Secondary Gain must name a concrete short benefit: ${text}`);
   assert.match(conclusion, /^Тому тобі вигідно залишатися у такому способі дій/u);
+  assert.doesNotMatch(benefit, /вигода:|плюс такий|причина лишатися/iu);
 }
 
 assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(0, 2000).every((text) => sentenceCount(text) === 1));
@@ -96,6 +98,7 @@ assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => senten
 for (const text of INDEPENDENT_LIFE_POOLS.affirmations) {
   for (const part of splitSentences(text)) assert.match(part.trim(), /^Я(?:\s|$)/u);
   assert.doesNotMatch(text, /я найкращ|ніколи не буде проблем|усі проблеми зник/iu);
+  assert.doesNotMatch(text, /про них|без віддалення/iu);
 }
 
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
@@ -173,6 +176,17 @@ assert.ok(socialScrollSections.gains.every((text) => /щось нове/u.test(t
 assert.ok(socialScrollSections.results.every((text) => !/таймер/iu.test(text)));
 assert.ok(socialScrollSections.results.every((text) => /закрити соцмережу/u.test(text)));
 
+const familyBoundarySections = Object.fromEntries(SECTIONS.map(([section]) => [
+  section,
+  getLifeSubtopicPoolIndices("boundaries", "family", section)
+    .map((index) => INDEPENDENT_LIFE_POOLS[section][index])
+]));
+assert.ok(familyBoundarySections.problems.every((text) => /рідними|власні межі/u.test(text)));
+assert.ok(familyBoundarySections.problems.every((text) => !/В особистих межах|час від часу|родиною не можна/iu.test(text)));
+assert.ok(familyBoundarySections.gains.every((text) => !/головна вигода|коротка вигода|плюс такий/iu.test(text)));
+assert.ok(familyBoundarySections.affirmations.every((text) => !/про них|віддалення/iu.test(text)));
+assert.ok(familyBoundarySections.affirmations.some((text) => /свої межі без сварки/u.test(text)));
+
 const originalRandom = Math.random;
 const twoAttemptSequence = [
   0.31, 0.61, 0.01, 0.21, 0.41, 0.61, 0.81, 0.90,
@@ -228,4 +242,4 @@ assert.match(first.meaning, /У дружбі/u);
 assert.match(first.affirmation, /попросити друга/u);
 assert.match(first.result, /попросити друга/u);
 
-console.log("✅ Card text system: 20×10×20 per section, blind-clear copy, coherent subtopics, internal Yes/No theme reroll");
+console.log("✅ Card text system: all 200 cores render in plain language; 20×10×20 per section and Yes/No reroll stay intact");
