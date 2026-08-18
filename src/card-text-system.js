@@ -246,6 +246,11 @@ const capitalize = (text = "") => {
   return value ? `${value[0].toUpperCase()}${value.slice(1)}` : "";
 };
 
+const lowerFirst = (text = "") => {
+  const value = String(text || "").trim();
+  return value ? `${value[0].toLowerCase()}${value.slice(1)}` : "";
+};
+
 const fill = (frame, values) =>
   Object.entries(values).reduce((text, [key, value]) => text.replaceAll(`{${key}}`, value), frame);
 
@@ -333,11 +338,15 @@ function buildProblem(theme, topic, style) {
     : `${first} ${second} ${THEME_PROBLEM_TAIL[theme[0]]}`;
 }
 
-function buildGain(theme, topic, style) {
+function buildGain(theme, topic, style, clarifyTopic = false) {
   const value = parts(theme, topic);
-  const first = sentence(capitalize(fill(GAIN_FRAMES[style], {
+  const benefit = fill(GAIN_FRAMES[style], {
     benefit: gainBenefitClause(value.benefit)
-  })));
+  });
+  const clearBenefit = clarifyTopic
+    ? `${contextFor(theme)}, коли йдеться про «${lowerFirst(value.name)}», ${benefit}`
+    : benefit;
+  const first = sentence(capitalize(clearBenefit));
   return `${first} Тому тобі вигідно залишатися у такому способі дій.`;
 }
 
@@ -378,6 +387,7 @@ const pools = {
   affirmations: Array(POOL_SIZE),
   results: Array(POOL_SIZE)
 };
+const seenGains = new Set();
 
 for (let themeIndex = 0; themeIndex < RAW.length; themeIndex += 1) {
   const theme = RAW[themeIndex];
@@ -386,8 +396,15 @@ for (let themeIndex = 0; themeIndex < RAW.length; themeIndex += 1) {
     for (let style = 0; style < LIFE_SUBTOPIC_POOL_SIZE; style += 1) {
       pools.problems[idx("problems", themeIndex, subtopicIndex, style)] =
         buildProblem(theme, topic, style);
-      pools.gains[idx("gains", themeIndex, subtopicIndex, style)] =
-        buildGain(theme, topic, style);
+
+      let gain = buildGain(theme, topic, style);
+      if (seenGains.has(gain)) gain = buildGain(theme, topic, style, true);
+      if (seenGains.has(gain)) {
+        throw new Error(`gain collision after clarification: ${theme[0]}/${topic[0]}/${style}`);
+      }
+      seenGains.add(gain);
+      pools.gains[idx("gains", themeIndex, subtopicIndex, style)] = gain;
+
       pools.meanings[idx("meanings", themeIndex, subtopicIndex, style)] =
         buildMeaning(theme, topic, style);
       pools.affirmations[idx("affirmations", themeIndex, subtopicIndex, style)] =
