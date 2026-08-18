@@ -4,6 +4,25 @@ import { getActiveBlocks, getBlock, getBlockSubtheme } from "./navigation.js";
 export const LEVELS_PER_PAGE = 8;
 export const LEVEL_COLUMNS = 2;
 
+const LEVEL_THEME_EMOJIS = Object.freeze({
+  sleep: "🌙",
+  energy: "⚡",
+  movement: "🏃",
+  confidence: "💪",
+  goals: "🎯",
+  habits: "🔁",
+  study: "📚",
+  direction: "🧭",
+  skills: "🛠️",
+  communication: "💬",
+  boundaries: "🛡️",
+  conflict: "🧯",
+  planning: "🗓️",
+  digital: "📱",
+  space: "🧹"
+});
+const LEVEL_EMOJI_FALLBACK = Object.freeze(["🎯", "💡", "🌱", "🧩", "🚀", "📌", "🛠️", "🧭", "✅", "🔄"]);
+
 function normalizePage(page, totalPages) {
   const numeric = Number.parseInt(page, 10);
   const requested = Number.isFinite(numeric) ? numeric : 0;
@@ -16,6 +35,18 @@ function cleanMenuLabel(text) {
     .replace(/\b\d+\s*·\s*/u, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+function levelNumber(levelKey) {
+  return Math.max(1, Number(String(levelKey || "").replace(/\D/g, "")) || 1);
+}
+
+function levelMenuLabel(themeKey, levelKey, name) {
+  const label = cleanMenuLabel(decorateLevelName(themeKey, levelKey, name));
+  if (/^\p{Extended_Pictographic}/u.test(label)) return label;
+  const emoji = LEVEL_THEME_EMOJIS[themeKey]
+    || LEVEL_EMOJI_FALLBACK[(levelNumber(levelKey) - 1) % LEVEL_EMOJI_FALLBACK.length];
+  return `${emoji} ${label}`;
 }
 
 function cleanHintDestination(text) {
@@ -131,7 +162,7 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
     rows.push([
       {
         text: hintButtonLabel(
-          decorateLevelName(themeKey, hintLevelKey, hintLevel.name || hintLevel.articleTitle)
+          levelMenuLabel(themeKey, hintLevelKey, hintLevel.name || hintLevel.articleTitle)
         ),
         callback_data: `level:${blockKey}:${themeKey}:${hintLevelKey}:${hintPage}`
       }
@@ -141,7 +172,7 @@ export function levelsKeyboard(blockKey, themeKey, page = 0) {
   for (let index = 0; index < pageEntries.length; index += LEVEL_COLUMNS) {
     rows.push(
       pageEntries.slice(index, index + LEVEL_COLUMNS).map(([levelKey, level]) => ({
-        text: cleanMenuLabel(decorateLevelName(themeKey, levelKey, level.name)),
+        text: levelMenuLabel(themeKey, levelKey, level.name),
         callback_data: `level:${blockKey}:${themeKey}:${levelKey}:${meta.page}`
       }))
     );

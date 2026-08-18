@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { HINTS } from "../src/hint-pool.js";
 import {
+  getActiveBlocks,
   getBlockSubtheme,
   getRandomRecommendation
 } from "../src/navigation.js";
 import {
   getLevelPage,
+  getLevelsPageMeta,
   levelsKeyboard,
   mainMenuKeyboard,
   resultKeyboard,
@@ -77,6 +79,25 @@ for (const keyboard of [menu, subthemesMenu, levelsMenu]) {
   );
 }
 
+for (const block of getActiveBlocks()) {
+  for (const [themeKey, theme] of Object.entries(block.subthemes || {})) {
+    const meta = getLevelsPageMeta(block.key, themeKey, 0);
+    for (let page = 0; page < meta.totalPages; page += 1) {
+      const keyboard = levelsKeyboard(block.key, themeKey, page);
+      const levelButtons = keyboard.inline_keyboard
+        .flat()
+        .filter((item) => String(item.callback_data || "").startsWith("level:"))
+        .filter((item) => !item.text.startsWith("🎲 Підказка ("));
+      assert.ok(levelButtons.length > 0, `${block.key}/${themeKey}/${page}: visible level buttons`);
+      for (const button of levelButtons) {
+        assert.match(button.text, /^\p{Extended_Pictographic}/u, `${block.key}/${themeKey}: every level name has an emoji`);
+        assert.ok(button.text.length <= 64, `${block.key}/${themeKey}: level button fits Telegram`);
+      }
+    }
+    assert.ok(Object.keys(theme.levels || {}).length > 0, `${block.key}/${themeKey}: subtheme has levels`);
+  }
+}
+
 const resultMenu = resultKeyboard(
   "state_action",
   "lazy",
@@ -91,4 +112,4 @@ assert.ok(!resultButtons.some((item) => item.text === "➡️ Продовжит
 assert.ok(!resultButtons.some((item) => item.text === "🎲 Інший варіант"));
 assert.ok(!resultButtons.some((item) => String(item.callback_data || "").startsWith("reroll:")));
 
-console.log("✅ Підказка показує напрям у кнопці без «Іншої підказки»");
+console.log("✅ Підказки зберігають навігацію, а кожен рівень у підблоках має емодзі");

@@ -21,52 +21,52 @@ const RAW = Object.freeze([
 ]);
 
 const PROBLEM_OPENERS = Object.freeze([
-  "ти ",
-  "часом ",
-  "іноді ",
-  "інколи ",
-  "деколи ",
-  "нерідко ",
-  "часто ",
-  "буває, що ",
-  "час від часу ",
-  "іншим разом "
+  "Ти ",
+  "Іноді ти ",
+  "Часто ти ",
+  "Буває, що ти ",
+  "Часом ти ",
+  "Інколи ти ",
+  "Деколи ти ",
+  "Нерідко ти ",
+  "У деякі дні ти ",
+  "У знайомій ситуації ти "
 ]);
 
 const GAIN_FRAMES = Object.freeze([
-  "{context} {benefit}",
-  "{context} коротка вигода: {benefit}",
-  "{context} проста вигода: {benefit}",
-  "{context} головна вигода: {benefit}",
-  "{context} тут плюс такий: {benefit}",
-  "{context} цей спосіб зручний, бо {benefit}",
-  "{context} залишатися так легше, бо {benefit}",
-  "{context} змінюватися важче, бо {benefit}",
-  "{context} цей спосіб тримається, бо {benefit}",
-  "{context} причина лишатися так: {benefit}",
-  "{context} одразу є вигода: {benefit}",
-  "{context} спершу є вигода: {benefit}",
-  "{context} на мить є вигода: {benefit}",
-  "{context} зараз є вигода: {benefit}",
-  "{context} так простіше, бо {benefit}",
-  "{context} по-старому легше, бо {benefit}",
-  "{context} звичний спосіб дає це: {benefit}",
-  "{context} короткий плюс: {benefit}",
-  "{context} причина проста: {benefit}",
-  "{context} вигода старого способу: {benefit}"
+  "{benefit}",
+  "Зараз {benefit}",
+  "Спочатку {benefit}",
+  "На короткий час {benefit}",
+  "У цій ситуації {benefit}",
+  "Коли дієш по-старому, {benefit}",
+  "Поки все лишається як є, {benefit}",
+  "Поки нічого не змінюєш, {benefit}",
+  "Через звичний спосіб {benefit}",
+  "У знайомому способі {benefit}",
+  "Одразу {benefit}",
+  "Ненадовго {benefit}",
+  "На мить {benefit}",
+  "Поки не робиш інакше, {benefit}",
+  "Якщо нічого не міняти, {benefit}",
+  "Коли лишаєш усе як є, {benefit}",
+  "Поки тримаєшся старого способу, {benefit}",
+  "У цей момент {benefit}",
+  "Перед зміною {benefit}",
+  "Поки не робиш нового кроку, {benefit}"
 ]);
 
 const MEANING_FRAMES = Object.freeze([
-  "{context} через це {cost}",
-  "{context} наслідок: {cost}",
-  "{context} це означає: {cost}",
-  "{context} у підсумку {cost}",
-  "{context} це видно так: {cost}",
-  "{context} проблема дає наслідок: {cost}",
-  "{context} через старий спосіб {cost}",
-  "{context} у житті це веде до того, що {cost}",
-  "{context} так стається, що {cost}",
-  "{context} результат такий: {cost}"
+  "{context} ти {cost}",
+  "{context} через це ти {cost}",
+  "{context} тому ти {cost}",
+  "{context} з часом ти {cost}",
+  "{context} у підсумку ти {cost}",
+  "{context} так ти {cost}",
+  "{context} через цю звичку ти {cost}",
+  "{context} через таку реакцію ти {cost}",
+  "{context} через такий вибір ти {cost}",
+  "{context} через цей спосіб ти {cost}"
 ]);
 
 const BODY = Object.freeze([
@@ -103,71 +103,71 @@ const TRIPLES = Object.freeze([
 
 const THEME_CONTEXT = Object.freeze({
   friends: "У дружбі",
-  family: "У сім’ї",
-  study: "У навчанні",
-  money: "У грошах",
-  health: "У турботі про здоров’я",
-  sleep: "У режимі сну",
-  household: "У побуті",
-  "self-esteem": "У ставленні до себе",
+  family: "Вдома",
+  study: "Під час навчання",
+  money: "Коли йдеться про гроші,",
+  health: "Коли дбаєш про здоров’я,",
+  sleep: "Коли готуєшся до сну,",
+  household: "У домашніх справах",
+  "self-esteem": "Коли оцінюєш себе,",
   future: "Коли думаєш про майбутнє,",
-  rest: "У відпочинку",
+  rest: "Коли відпочиваєш,",
   "social-media": "У соцмережах",
-  work: "У роботі",
-  sport: "У спорті",
-  boundaries: "В особистих межах",
-  communication: "У спілкуванні",
-  decisions: "Під час вибору",
-  goals: "У роботі над цілями",
+  work: "Під час роботи",
+  sport: "Під час тренувань",
+  boundaries: "У стосунках з іншими",
+  communication: "У розмовах",
+  decisions: "Коли треба щось вирішити,",
+  goals: "Коли працюєш над ціллю,",
   emotions: "Коли емоції сильні,",
-  responsibility: "У відповідальності",
-  development: "У власному розвитку"
+  responsibility: "Коли береш на себе обов’язки,",
+  development: "Коли вчишся новому,"
 });
 
 const THEME_PROBLEM_TAIL = Object.freeze({
-  friends: "Так у дружбі стає менше прямоти.",
-  family: "Так удома накопичується напруга.",
-  study: "Так навчання забирає більше сил.",
-  money: "Так гроші частіше додають напруги.",
-  health: "Так прості потреби легше пропустити.",
-  sleep: "Так режим сну збивається сильніше.",
-  household: "Так побутові справи швидше накопичуються.",
-  "self-esteem": "Так ставлення до себе стає жорсткішим.",
-  future: "Так невизначеність забирає більше уваги.",
-  rest: "Так відпочинок відновлює гірше.",
-  "social-media": "Так стрічка забирає більше часу й уваги.",
-  work: "Так робочий день стає напруженішим.",
-  sport: "Так ритм руху стає менш стабільним.",
-  boundaries: "Так власні межі легше відсуваються.",
-  communication: "Так непорозумінь стає більше.",
-  decisions: "Так вибір забирає більше сил.",
-  goals: "Так рух до цілі стає менш стабільним.",
-  emotions: "Так емоція довше керує реакцією.",
-  responsibility: "Так домовленості стають менш надійними.",
-  development: "Так розвиток частіше йде ривками."
+  friends: "Так ти частіше мовчиш або підлаштовуєшся.",
+  family: "Так удома легше накопичується напруга.",
+  study: "Так навчання забирає більше сил, ніж потрібно.",
+  money: "Так з грошима стає більше напруги.",
+  health: "Так свої потреби легше пропустити.",
+  sleep: "Так режим сну збивається ще сильніше.",
+  household: "Так домашні справи швидше накопичуються.",
+  "self-esteem": "Так ти частіше знецінюєш себе.",
+  future: "Так думки про майбутнє забирають більше сил.",
+  rest: "Так навіть після відпочинку сил повертається менше.",
+  "social-media": "Так телефон забирає більше часу, ніж ти планував.",
+  work: "Так робочий день виснажує сильніше.",
+  sport: "Так тренування стають менш регулярними.",
+  boundaries: "Так ти частіше відсуваєш власні межі.",
+  communication: "Так у розмовах стає більше непорозумінь.",
+  decisions: "Так навіть простий вибір забирає більше сил.",
+  goals: "Так рух до цілі постійно збивається.",
+  emotions: "Так емоція довше керує твоєю реакцією.",
+  responsibility: "Так домовленості частіше залишаються невиконаними.",
+  development: "Так прогрес частіше йде ривками."
 });
 
 const THEME_IMPACT = Object.freeze({
-  friends: "Так дружба стає менш відкритою й передбачуваною.",
-  family: "Так удома накопичується більше напруги й непорозумінь.",
-  study: "Так навчання частіше забирає зайві сили й час.",
-  money: "Так фінансові рішення стають менш передбачуваними.",
-  health: "Так складніше вчасно помічати й підтримувати свої потреби.",
-  sleep: "Так режим сну стає менш стабільним.",
-  household: "Так побут забирає більше часу й уваги.",
-  "self-esteem": "Так оцінка себе сильніше залежить від окремих ситуацій.",
-  future: "Так невизначеність забирає більше уваги.",
-  rest: "Так відпочинок гірше відновлює сили.",
-  "social-media": "Так менше часу й уваги лишається на сон, справи або відпочинок.",
-  work: "Так робочий день стає напруженішим і менш передбачуваним.",
-  sport: "Так складніше тримати стабільний ритм руху.",
-  boundaries: "Так власні потреби й межі частіше відсуваються.",
-  communication: "Так у розмовах легше накопичуються непорозуміння.",
-  decisions: "Так вибір забирає більше часу й сил.",
-  goals: "Так рух до цілі стає менш послідовним.",
-  emotions: "Так емоція частіше керує реакцією замість тебе.",
-  responsibility: "Так тобі й іншим складніше покладатися на домовленості.",
-  development: "Так розвиток частіше йде ривками."
+  friends: "Через це у дружбі стає менше довіри й прямоти.",
+  family: "Через це вдома стає важче домовлятися.",
+  study: "Через це навчання забирає більше часу й сил.",
+  money: "Через це з грошима стає більше напруги.",
+  health: "Через це свої потреби легше пропустити.",
+  sleep: "Через це режим сну стає менш стабільним.",
+  household: "Через це домашні справи швидше накопичуються.",
+  "self-esteem": "Через це одна невдача сильніше впливає на оцінку себе.",
+  future: "Через це думки про майбутнє забирають більше уваги.",
+  rest: "Через це відпочинок гірше повертає сили.",
+  "social-media": "Через це менше часу лишається на сон, справи або відпочинок.",
+  work: "Через це робочий день стає напруженішим.",
+  sport: "Через це складніше тримати регулярний рух.",
+  boundaries: "Через це власні потреби й межі частіше відсуваються.",
+  communication: "Через це в розмовах стає більше непорозумінь.",
+  decisions: "Через це навіть простий вибір забирає більше часу й сил.",
+  goals: "Через це рух до цілі стає менш послідовним.",
+  emotions: "Через це емоція частіше керує реакцією замість тебе.",
+  responsibility: "Через це тобі й іншим важче покладатися на домовленості.",
+  development: "Через це прогрес частіше йде ривками."
 });
 
 const CLARITY_REPLACEMENTS = Object.freeze([
@@ -195,10 +195,10 @@ const TOPIC_OVERRIDES = Object.freeze({
     cost: "відкладаєш сон або інші справи",
     benefit: "можливість постійно бачити щось нове",
     principle: "заздалегідь визначений час допомагає не втрачати пів години непомітно",
-    permission: "самому вирішувати час у стрічці",
-    choice: "зупинятися у визначений момент",
-    alternative: "визначити час для стрічки наперед",
-    nextStep: "закрити соцмережу, коли час мине"
+    permission: "самому вирішувати, скільки часу провести у стрічці",
+    choice: "зупиняти перегляд у запланований момент",
+    alternative: "заздалегідь вирішити, скільки часу провести у стрічці",
+    nextStep: "закрити соцмережу, коли цей час мине"
   }),
   "social-media/auto": Object.freeze({
     behavior: "відкриваєш стрічку соцмереж автоматично, навіть без конкретної причини",
@@ -216,6 +216,16 @@ const TOPIC_OVERRIDES = Object.freeze({
   }),
   "health/screen": Object.freeze({
     benefit: "можливість не відриватися від екрана"
+  }),
+  "boundaries/family": Object.freeze({
+    behavior: "думаєш, що з рідними треба погоджуватися навіть тоді, коли тобі щось не підходить",
+    cost: "частіше терпиш те, що тобі не підходить",
+    benefit: "можливість не починати суперечку з близькими",
+    principle: "близькість не скасовує твоє право на власні межі",
+    permission: "мати власні межі навіть з рідними",
+    choice: "говорити про свої межі прямо й спокійно",
+    alternative: "сказати про свої межі без сварки",
+    nextStep: "назвати одну річ, яка тобі не підходить"
   })
 });
 
@@ -235,10 +245,33 @@ const normalizePhrase = (value = "") => {
 
 const contextFor = (theme) => THEME_CONTEXT[theme[0]] || theme[2] || `У темі «${theme[1]}»`;
 
-function benefitClause(benefit) {
+const capitalize = (value = "") => {
+  const text = String(value || "").trim();
+  return text ? text[0].toUpperCase() + text.slice(1) : text;
+};
+
+const lowerFirst = (value = "") => {
+  const text = String(value || "").trim();
+  return text ? text[0].toLowerCase() + text.slice(1) : text;
+};
+
+function gainBenefitClause(benefit) {
   const value = normalizePhrase(benefit);
-  if (/^можливість\s+/u.test(value)) return `ти можеш ${value.replace(/^можливість\s+/u, "")}`;
+  if (/^можливість\s+/u.test(value)) return `тобі легше ${value.replace(/^можливість\s+/u, "")}`;
+  if (/^відчуття(?:,|\s)/u.test(value)) return `ти зберігаєш ${value}`;
   return `ти отримуєш ${value}`;
+}
+
+function firstPersonAction(value = "") {
+  return normalizePhrase(value)
+    .replace(/\bколи ти зможеш\b/gu, "коли зможу")
+    .replace(/\bтобі\b/gu, "мені")
+    .replace(/\bтебе\b/gu, "мене")
+    .replace(/\bтвої\b/gu, "мої")
+    .replace(/\bтвій\b/gu, "мій")
+    .replace(/\bтвоя\b/gu, "моя")
+    .replace(/\bтвоє\b/gu, "моє")
+    .replace(/\bти\b/gu, "я");
 }
 
 if (RAW.length !== LIFE_THEME_COUNT) throw new Error("expected 20 life themes");
@@ -291,19 +324,22 @@ function parts(theme, topic) {
 function buildProblem(theme, topic, style) {
   const value = parts(theme, topic);
   const local = style % 10;
-  const first = sentence(`${contextFor(theme)} ${PROBLEM_OPENERS[local]}${value.behavior}`);
+  const first = sentence(`${PROBLEM_OPENERS[local]}${value.behavior}`);
   const second = sentence(`Через це ${value.cost}`);
   return style < 10
     ? `${first} ${second}`
     : `${first} ${second} ${THEME_PROBLEM_TAIL[theme[0]]}`;
 }
 
-function buildGain(theme, topic, style) {
+function buildGain(theme, topic, style, clarifyTopic = false) {
   const value = parts(theme, topic);
-  const first = sentence(fill(GAIN_FRAMES[style], {
-    context: contextFor(theme),
-    benefit: benefitClause(value.benefit)
-  }));
+  const benefit = fill(GAIN_FRAMES[style], {
+    benefit: gainBenefitClause(value.benefit)
+  });
+  const clearBenefit = clarifyTopic
+    ? `${contextFor(theme)}, коли йдеться про «${lowerFirst(value.name)}», ${benefit}`
+    : benefit;
+  const first = sentence(capitalize(clearBenefit));
   return `${first} Тому тобі вигідно залишатися у такому способі дій.`;
 }
 
@@ -319,10 +355,10 @@ function buildMeaning(theme, topic, style) {
 function buildAffirmation(theme, topic, style) {
   const value = parts(theme, topic);
   const options = [
-    sentence(`Я можу ${value.alternative}`),
-    sentence(`Я маю право ${value.permission}`),
-    sentence(`Я обираю ${value.choice}`),
-    sentence(`Я можу ${value.nextStep}`)
+    sentence(`Я можу ${firstPersonAction(value.alternative)}`),
+    sentence(`Я маю право ${firstPersonAction(value.permission)}`),
+    sentence(`Я обираю ${firstPersonAction(value.choice)}`),
+    sentence(theme[4])
   ];
   const combo = style < 10 ? PAIRS[style] : TRIPLES[style - 10];
   return combo.map((index) => options[index]).join(" ");
@@ -350,19 +386,35 @@ for (let themeIndex = 0; themeIndex < RAW.length; themeIndex += 1) {
   for (let subtopicIndex = 0; subtopicIndex < theme[5].length; subtopicIndex += 1) {
     const topic = theme[5][subtopicIndex];
     for (let style = 0; style < LIFE_SUBTOPIC_POOL_SIZE; style += 1) {
-      pools.problems[idx("problems", themeIndex, subtopicIndex, style)] =
-        buildProblem(theme, topic, style);
-      pools.gains[idx("gains", themeIndex, subtopicIndex, style)] =
-        buildGain(theme, topic, style);
-      pools.meanings[idx("meanings", themeIndex, subtopicIndex, style)] =
-        buildMeaning(theme, topic, style);
-      pools.affirmations[idx("affirmations", themeIndex, subtopicIndex, style)] =
-        buildAffirmation(theme, topic, style);
-      pools.results[idx("results", themeIndex, subtopicIndex, style)] =
-        buildResult(theme, topic, style);
+      pools.problems[idx("problems", themeIndex, subtopicIndex, style)] = buildProblem(theme, topic, style);
+      pools.gains[idx("gains", themeIndex, subtopicIndex, style)] = buildGain(theme, topic, style);
+      pools.meanings[idx("meanings", themeIndex, subtopicIndex, style)] = buildMeaning(theme, topic, style);
+      pools.affirmations[idx("affirmations", themeIndex, subtopicIndex, style)] = buildAffirmation(theme, topic, style);
+      pools.results[idx("results", themeIndex, subtopicIndex, style)] = buildResult(theme, topic, style);
     }
   }
 }
+
+function dedupeGainPool() {
+  const seen = new Map();
+  for (let themeIndex = 0; themeIndex < RAW.length; themeIndex += 1) {
+    const theme = RAW[themeIndex];
+    for (let subtopicIndex = 0; subtopicIndex < theme[5].length; subtopicIndex += 1) {
+      const topic = theme[5][subtopicIndex];
+      for (let style = 0; style < LIFE_SUBTOPIC_POOL_SIZE; style += 1) {
+        const index = idx("gains", themeIndex, subtopicIndex, style);
+        const current = pools.gains[index];
+        if (!seen.has(current)) {
+          seen.set(current, index);
+          continue;
+        }
+        pools.gains[index] = buildGain(theme, topic, style, true);
+      }
+    }
+  }
+}
+
+dedupeGainPool();
 
 export const INDEPENDENT_LIFE_POOLS = Object.freeze(
   Object.fromEntries(Object.entries(pools).map(([key, pool]) => [key, Object.freeze(pool)]))
@@ -379,9 +431,7 @@ export function getLifeThemePoolIndices(themeKey, section) {
   if (!entry) throw new Error(`unknown life theme: ${themeKey}`);
   if (!SECTIONS.includes(section)) throw new Error(`unknown life pool section: ${section}`);
   return entry.theme[5].flatMap((_, subtopicIndex) =>
-    Array.from({ length: LIFE_SUBTOPIC_POOL_SIZE }, (_, style) =>
-      idx(section, entry.index, subtopicIndex, style)
-    )
+    Array.from({ length: LIFE_SUBTOPIC_POOL_SIZE }, (_, style) => idx(section, entry.index, subtopicIndex, style))
   );
 }
 
@@ -391,20 +441,12 @@ export function getLifeSubtopicPoolIndices(themeKey, subtopicKey, section) {
   if (!SECTIONS.includes(section)) throw new Error(`unknown life pool section: ${section}`);
   const subtopicIndex = entry.theme[5].findIndex((topic) => topic[0] === subtopicKey);
   if (subtopicIndex < 0) throw new Error(`unknown life subtopic: ${themeKey}/${subtopicKey}`);
-  return Array.from({ length: LIFE_SUBTOPIC_POOL_SIZE }, (_, style) =>
-    idx(section, entry.index, subtopicIndex, style)
-  );
+  return Array.from({ length: LIFE_SUBTOPIC_POOL_SIZE }, (_, style) => idx(section, entry.index, subtopicIndex, style));
 }
 
 const normalize = (value, modulo) => ((value % modulo) + modulo) % modulo;
 const randomIndex = (size) => Math.floor(Math.random() * size);
-const OFFSETS = Object.freeze({
-  problems: 0,
-  gains: 3,
-  meanings: 7,
-  affirmations: 11,
-  results: 15
-});
+const OFFSETS = Object.freeze({ problems: 0, gains: 3, meanings: 7, affirmations: 11, results: 15 });
 
 function buildVariant(themeIndex, subtopicIndex, styles, selection = {}) {
   const theme = RAW[themeIndex];
