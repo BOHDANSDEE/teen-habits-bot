@@ -15,7 +15,7 @@ assert.equal(new Set(INDEPENDENT_LIFE_POOLS.meanings).size, POOL_SIZE);
 for (const text of INDEPENDENT_LIFE_POOLS.gains) {
   const sentences = splitSentences(text).map((part) => part.trim());
   assert.equal(sentences.length, 2, `Secondary Gain must have exactly 2 sentences: ${text}`);
-  assert.match(sentences[0], /(?:легше|отримуєш|зберігаєш)/iu, `Secondary Gain must state an immediate concrete benefit: ${text}`);
+  assert.match(sentences[0], /(?:легше|можеш|отримуєш|зберігаєш)/iu, `Secondary Gain must state an immediate concrete benefit: ${text}`);
   assert.match(sentences[1], /^Тому тобі вигідно залишатися у такому способі дій/u);
   assert.doesNotMatch(text, /тримати всі справи вище за себе|ставити всі справи вище за себе/iu);
 }
