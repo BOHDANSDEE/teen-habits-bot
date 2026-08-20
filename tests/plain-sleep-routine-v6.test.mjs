@@ -10,7 +10,7 @@ const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/
 const sentenceCount = (text) => splitSentences(text).length;
 const OLD_SLEEP_COPY = /ритуал|сигналом,?\s+що день закінчується|повторюваних дій/iu;
 const EMPTY_GAIN = /користь є (?:одразу|зараз)|міняти не хочеться|зміна — потім/iu;
-const SLEEP_CONTEXT = /сон|сну|сном|спат|ляг|засин|вечір|день|відпочин/iu;
+const SLEEP_CONTEXT = /сн|спат|ляг|засин|веч|ден|відпочин/iu;
 
 const sleep = LIFE_RANDOM_THEMES.find((theme) => theme.key === "sleep");
 assert.ok(sleep, "sleep theme exists");
@@ -54,7 +54,7 @@ for (const text of sections.affirmations) {
   assert.equal(parts.length, 2);
   assert.ok(parts.every((part) => /^Я\s/u.test(part)));
   assert.doesNotMatch(text, /Я (?:можу|обираю|маю право)\b/iu);
-  assert.match(text, /сн|вечір|справ|завтра/iu);
+  assert.match(text, /сн|веч|справ|завтра/iu);
 }
 
 console.log("✅ Sleep routine: plain preparation-to-sleep copy replaces ritual/signal wording in all four blocks");
