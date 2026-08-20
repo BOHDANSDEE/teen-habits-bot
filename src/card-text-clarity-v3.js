@@ -1,0 +1,47 @@
+import * as base from "./card-text-clarity-v2.js";
+
+export * from "./card-text-clarity-v2.js";
+
+const SHORTEN = Object.freeze([
+  ["якщо все лишається як є,", "якщо так лишити,"],
+  ["якщо нічого не змінювати,", "якщо не міняти,"],
+  ["коли старий спосіб повторюється,", "коли це повторюється,"],
+  ["якщо звичка не змінюється,", "якщо так і далі,"],
+  ["коли це триває далі,", "коли так триває,"],
+  ["якщо лишати все по-старому,", "якщо лишити так,"],
+  ["з часом без зміни", "з часом"],
+  ["у дружбі стає менше довіри", "у дружбі менше довіри"],
+  ["вдома стає більше напруги", "вдома більше напруги"],
+  ["навчання забирає більше сил", "навчання забирає сили"],
+  ["з грошима стає більше напруги", "з грошима більше напруги"],
+  ["менше часу лишається на сон і справи", "менше часу на сон і справи"],
+  ["робочий день виснажує сильніше", "робота виснажує сильніше"],
+  ["відстоювати свої межі стає важче", "берегти свої межі важче"],
+  ["у розмовах стає більше непорозумінь", "у розмовах більше непорозумінь"],
+  ["вибір забирає більше часу й сил", "вибір забирає час і сили"]
+]);
+
+function shortenMeaning(text) {
+  let value = String(text || "");
+  for (const [from, to] of SHORTEN) value = value.replaceAll(from, to);
+  return value;
+}
+
+const meanings = Object.freeze(base.INDEPENDENT_LIFE_POOLS.meanings.map(shortenMeaning));
+
+if (meanings.length !== base.POOL_SIZE || new Set(meanings).size !== base.POOL_SIZE) {
+  throw new Error(`meanings must remain exactly ${base.POOL_SIZE} unique visible texts`);
+}
+
+export const INDEPENDENT_LIFE_POOLS = Object.freeze({
+  ...base.INDEPENDENT_LIFE_POOLS,
+  meanings
+});
+
+export function getIndependentLifeVariant(requestedVariant = null) {
+  const variant = base.getIndependentLifeVariant(requestedVariant);
+  return {
+    ...variant,
+    meaning: meanings[variant.meaningIndex]
+  };
+}
