@@ -10,6 +10,7 @@ const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/
 const sentenceCount = (text) => splitSentences(text).length;
 const OLD_SLEEP_COPY = /ритуал|сигналом,?\s+що день закінчується|повторюваних дій/iu;
 const EMPTY_GAIN = /користь є (?:одразу|зараз)|міняти не хочеться|зміна — потім/iu;
+const SLEEP_CONTEXT = /сон|сну|спати|лягати|засин|вечір|день|відпочин/iu;
 
 const sleep = LIFE_RANDOM_THEMES.find((theme) => theme.key === "sleep");
 assert.ok(sleep, "sleep theme exists");
@@ -32,7 +33,7 @@ assert.ok(sections.problems.slice(10).every((text) => sentenceCount(text) === 3)
 for (const text of sections.problems) {
   const parts = splitSentences(text).map((part) => part.trim());
   assert.match(parts[1], /^Через це /u);
-  assert.match(text, /сн|вечір|день|відпочин/iu);
+  assert.match(text, SLEEP_CONTEXT);
 }
 
 for (const text of sections.gains) {
@@ -46,7 +47,7 @@ for (const text of sections.gains) {
 
 assert.ok(sections.meanings.slice(0, 10).every((text) => sentenceCount(text) === 1));
 assert.ok(sections.meanings.slice(10).every((text) => sentenceCount(text) === 2));
-assert.ok(sections.meanings.every((text) => /сн|вечір|день|відпочин/iu.test(text)));
+assert.ok(sections.meanings.every((text) => SLEEP_CONTEXT.test(text)));
 
 for (const text of sections.affirmations) {
   const parts = splitSentences(text).map((part) => part.trim());
