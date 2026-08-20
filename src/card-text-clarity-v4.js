@@ -86,7 +86,13 @@ const sentence = (text = "") => {
 };
 
 function normalizeBenefit(value = "") {
-  let text = String(value || "").trim();
+  let text = String(value || "")
+    .trim()
+    .replace(/патерн/giu, "звичку")
+    .replace(/сценарій/giu, "спосіб")
+    .replace(/механізм/giu, "спосіб")
+    .replace(/когнітив\w*/giu, "розумовий")
+    .replace(/соматич\w*/giu, "тілесний");
   for (const [from, to] of BENEFIT_REPLACEMENTS) text = text.replaceAll(from, to);
   return text;
 }
