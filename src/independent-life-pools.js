@@ -1,1 +1,1 @@
-export * from "./card-text-clarity-v5.js";
+export * from "./card-text-clarity-v6.js";
