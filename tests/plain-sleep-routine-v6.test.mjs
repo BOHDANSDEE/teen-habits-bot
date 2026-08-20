@@ -10,7 +10,7 @@ const splitSentences = (text) => String(text).match(/[^.!?…]+[.!?…](?=\s|$)/
 const sentenceCount = (text) => splitSentences(text).length;
 const OLD_SLEEP_COPY = /ритуал|сигналом,?\s+що день закінчується|повторюваних дій/iu;
 const EMPTY_GAIN = /користь є (?:одразу|зараз)|міняти не хочеться|зміна — потім/iu;
-const SLEEP_CONTEXT = /сон|сну|спати|лягати|засин|вечір|день|відпочин/iu;
+const SLEEP_CONTEXT = /сон|сну|сном|спат|ляг|засин|вечір|день|відпочин/iu;
 
 const sleep = LIFE_RANDOM_THEMES.find((theme) => theme.key === "sleep");
 assert.ok(sleep, "sleep theme exists");
