@@ -24,11 +24,38 @@ const PHRASE_REPLACEMENTS = Object.freeze([
   ["говорити про них без віддалення", "говорити про свої межі без сварки"],
   ["говорити про них", "говорити про це прямо"],
   ["без віддалення", "без сварки"],
+  ["час від часу", "інколи"],
+  ["іншим разом", "інколи"],
   ["дозволяти собі неідеальний контент", "дозволяти собі неідеальні публікації"],
   ["не тримати контент, який постійно шкодить настрою", "не залишати в стрічці те, що постійно псує настрій"],
   ["зменшувати зайві стимули перед сном", "прибирати зайві екрани й активні справи перед сном"],
   ["залишатися з фантазією замість досвіду", "залишатися лише з уявленням замість реального досвіду"]
 ]);
+
+const TOPIC_ACTION_OVERRIDES = Object.freeze({
+  "social-media/scroll": Object.freeze({
+    principle: "заздалегідь визначений час допомагає не втрачати пів години непомітно",
+    permission: "самому вирішувати, скільки часу провести у стрічці",
+    choice: "зупиняти перегляд у запланований момент",
+    alternative: "заздалегідь вирішити, скільки часу провести у стрічці",
+    nextStep: "закрити соцмережу, коли цей час мине"
+  }),
+  "social-media/auto": Object.freeze({
+    alternative: "запитати себе, навіщо відкриваю стрічку",
+    nextStep: "не відкривати соцмережу без причини"
+  }),
+  "rest/scroll": Object.freeze({
+    alternative: "відкласти телефон і зробити коротку паузу без стрічки",
+    nextStep: "провести кілька хвилин без телефона"
+  }),
+  "boundaries/family": Object.freeze({
+    principle: "близькість не скасовує моє право на власні межі",
+    permission: "мати власні межі навіть з рідними",
+    choice: "говорити про свої межі прямо й спокійно",
+    alternative: "сказати про свої межі без сварки",
+    nextStep: "назвати одну річ, яка мені не підходить"
+  })
+});
 
 const EXACT_VERBS = Object.freeze({
   "бути": "залишаюся",
@@ -137,8 +164,7 @@ function normalizePhrase(value = "") {
 }
 
 function conjugateInfinitive(word) {
-  const original = String(word || "");
-  const lower = original.toLowerCase();
+  const lower = String(word || "").toLowerCase();
   let infinitive = lower;
   let reflexive = "";
 
@@ -154,8 +180,6 @@ function conjugateInfinitive(word) {
   if (!direct) {
     if (infinitive.endsWith("ювати")) direct = `${infinitive.slice(0, -5)}юю`;
     else if (infinitive.endsWith("увати")) direct = `${infinitive.slice(0, -5)}ую`;
-    else if (infinitive.endsWith("овувати")) direct = `${infinitive.slice(0, -7)}овую`;
-    else if (infinitive.endsWith("ювати")) direct = `${infinitive.slice(0, -5)}юю`;
     else if (infinitive.endsWith("ати")) direct = `${infinitive.slice(0, -3)}аю`;
     else if (infinitive.endsWith("яти")) direct = `${infinitive.slice(0, -3)}яю`;
     else if (infinitive.endsWith("іти")) direct = `${infinitive.slice(0, -3)}ію`;
@@ -199,15 +223,27 @@ function affirmationIndex(themeIndex, subtopicIndex, style) {
   return (style >= 10 ? 2000 : 0) + topic * 10 + (style % 10);
 }
 
+function topicValues(theme, topic) {
+  const values = {
+    principle: topic[5],
+    permission: topic[6],
+    choice: topic[7],
+    alternative: topic[8],
+    nextStep: topic[9]
+  };
+  return { ...values, ...(TOPIC_ACTION_OVERRIDES[`${theme[0]}/${topic[0]}`] || {}) };
+}
+
 function buildStatements(theme, topic) {
   if (`${theme[0]}/${topic[0]}` === "friends/listening") return LISTENING_STATEMENTS;
+  const value = topicValues(theme, topic);
 
   return Object.freeze([
-    directStatement(topic[6]),
-    directStatement(topic[7]),
-    directStatement(topic[8]),
-    directStatement(topic[9]),
-    principleStatement(topic[5])
+    directStatement(value.permission),
+    directStatement(value.choice),
+    directStatement(value.alternative),
+    directStatement(value.nextStep),
+    principleStatement(value.principle)
   ]);
 }
 
