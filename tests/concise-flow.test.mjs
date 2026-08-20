@@ -36,8 +36,8 @@ assert.ok(INDEPENDENT_LIFE_POOLS.problems.slice(2000).every((text) => sentenceCo
 assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => sentenceCount(text) === 2));
 assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(0, 2000).every((text) => sentenceCount(text) === 1));
 assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(2000).every((text) => sentenceCount(text) === 2));
-assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sentenceCount(text) === 2));
-assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
+assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.every((text) => sentenceCount(text) === 2));
+assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.every((text) => !/Я (?:можу|обираю|маю право)\b/u.test(text)));
 assert.ok(INDEPENDENT_LIFE_POOLS.results.every((text) => sentenceCount(text) === 3));
 assert.ok(INDEPENDENT_LIFE_POOLS.gains.every((text) => /Тому тобі вигідно залишатися у такому способі дій/iu.test(text)));
 
