@@ -93,10 +93,10 @@ for (const text of INDEPENDENT_LIFE_POOLS.gains) {
 assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(0, 2000).every((text) => sentenceCount(text) === 1));
 assert.ok(INDEPENDENT_LIFE_POOLS.meanings.slice(2000).every((text) => sentenceCount(text) === 2));
 
-assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(0, 2000).every((text) => sentenceCount(text) === 2));
-assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.slice(2000).every((text) => sentenceCount(text) === 3));
+assert.ok(INDEPENDENT_LIFE_POOLS.affirmations.every((text) => sentenceCount(text) === 2));
 for (const text of INDEPENDENT_LIFE_POOLS.affirmations) {
   for (const part of splitSentences(text)) assert.match(part.trim(), /^Я(?:\s|$)/u);
+  assert.doesNotMatch(text, /Я (?:можу|обираю|маю право)\b/u);
   assert.doesNotMatch(text, /я найкращ|ніколи не буде проблем|усі проблеми зник/iu);
   assert.doesNotMatch(text, /про них|без віддалення/iu);
 }
@@ -239,7 +239,7 @@ assert.deepEqual(
 assert.match(first.problem, /просиш друзів про допомогу/u);
 assert.match(first.gain, /вразливість/u);
 assert.match(first.meaning, /У дружбі/u);
-assert.match(first.affirmation, /попросити друга/u);
+assert.match(first.affirmation, /прошу|підтрим/u);
 assert.match(first.result, /попросити друга/u);
 
 console.log("✅ Card text system: all 200 cores render in plain language; 20×10×20 per section and Yes/No reroll stay intact");
