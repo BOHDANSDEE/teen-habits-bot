@@ -21,6 +21,29 @@ export const RESERVED_BLOCK_SLOTS = Object.freeze(
   }))
 );
 
+const ARTICLE_SLUG_ALIASES = Object.freeze({
+  "yak-poboroty-lin-i-pochaty-diiaty": "yak-poboroty-lin",
+  "chomu-nichoho-ne-khochetsia-robyty": "prychyny-lini",
+  "yak-zmusyty-sebe-shchos-robyty-koly-ne-khochetsia": "yak-diiaty-koly-nemaie-motyvatsii",
+  "chomu-vidkladaiu-navit-prosti-spravy": "yak-poboroty-lin",
+  "chomu-pislia-zrobliu-potim-staie-lehshe": "prychyny-lini",
+  "ne-znaiu-z-choho-pochaty": "yak-poboroty-lin",
+  "yak-pochaty-velyku-spravu": "yak-poboroty-lin",
+  "chomu-bahato-planuiu-ale-ne-pochynaiu": "yak-poboroty-lin",
+  "yak-perestaty-chekaty-pravylnoho-momentu": "yak-diiaty-koly-nemaie-motyvatsii",
+  "chomu-spysok-sprav-demotyvuie": "prychyny-lini",
+  "boiusia-pochaty-bo-mozhu-zrobyty-pohano": "prychyny-lini",
+  "yak-perestaty-vidkladaty-cherez-strakh-pomylky": "prychyny-lini",
+  "ne-khochetsia-robyty-koly-ne-vpevnenyi": "prychyny-lini",
+  "chomu-lehshe-ne-probuvaty": "prychyny-lini",
+  "yak-pochaty-koly-rezultat-ne-harantovanyi": "yak-poboroty-lin",
+  "prosti-spravy-vidchuvaiutsia-zanadto-vazhkymy": "prychyny-lini",
+  "yak-perestaty-vidvolikatysia-na-telefon": "chomu-ne-vystachaie-syly-voli",
+  "chomu-robliu-dribnytsi-zamist-vazhlyvoi-spravy": "chomu-ne-vystachaie-syly-voli",
+  "chomu-pochynaiu-lyshe-pered-dedlainom": "yak-rozvynuty-samodystsyplinu",
+  "ne-bachu-sensu-robyty-khocha-treba": "prychyny-lini"
+});
+
 export function getBlock(blockKey) {
   return BLOCKS[blockKey] || null;
 }
@@ -84,9 +107,11 @@ export function getRandomRecommendation() {
 export function findLevelByArticleSlug(articleSlug) {
   const normalized = String(articleSlug || "").trim().toLowerCase();
   if (!normalized) return null;
+
+  const resolvedSlug = ARTICLE_SLUG_ALIASES[normalized] || normalized;
   return (
     getAllLevelTargets().find(
-      (target) => String(target.level?.articleSlug || "").toLowerCase() === normalized
+      (target) => String(target.level?.articleSlug || "").toLowerCase() === resolvedSlug
     ) || null
   );
 }
